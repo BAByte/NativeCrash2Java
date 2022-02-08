@@ -35,7 +35,6 @@
 
 #include <sys/utsname.h>
 #include <android/log.h>
-#include <third_party/thread/java_thread.h>
 
 #include "client/linux/dump_writer_common/thread_info.h"
 #include "client/linux/dump_writer_common/ucontext_reader.h"
@@ -53,6 +52,7 @@
 #include <third_party/utils/android_version_utils.h>
 #include <linux/prctl.h>
 #include <sys/prctl.h>
+#include <third_party/utils/signal_explain.h>
 
 #define LOG_TAG ">>> minidumpWholeTrackWrier"
 
@@ -86,99 +86,16 @@ namespace {
         bool skip_dump_if_principal_mapping_not_referenced_;
         uintptr_t address_within_principal_mapping_;
         bool sanitize_stack_;
-        babyte::MinidumpWholeExtraInfo minidump_whole_extra_info_;
         babyte::CrashInfo stringSplicing_;
+        int *log_descriptors_;
     public:
-        const char *GetCrashSignalCodeString(int crash_signal_, int crash_signal_code) const {
-            switch (static_cast<unsigned int>(crash_signal_)) {
-                case SIGBUS:
-                    return GetSIGBUS(crash_signal_code);
-                case SIGFPE:
-                    return GetSIGFPE(crash_signal_code);
-                case SIGSEGV:
-                    return GetSIGSEGV(crash_signal_code);
-                case SIGILL:
-                    return GetSIGILL(crash_signal_code);
-                default:
-                    return reinterpret_cast<const char *>(crash_signal_code);
-            }
-        }
-
-        const char *GetSIGBUS(int crash_signal_code) const {
-            switch (static_cast<unsigned int>(crash_signal_code)) {
-                case MD_EXCEPTION_FLAG_LIN_BUS_ADRALN:
-                    return "address cannot be aligned";
-                case MD_EXCEPTION_FLAG_LIN_BUS_ADRERR:
-                    return "wrong physical address";
-                default :
-                    return reinterpret_cast<const char *>(crash_signal_code);
-            }
-        }
-
-        const char *GetSIGFPE(int crash_signal_code) const {
-            switch (static_cast<unsigned int>(crash_signal_code)) {
-                case MD_EXCEPTION_FLAG_LIN_FPE_INTDIV:
-                    return "int / 0";
-                case MD_EXCEPTION_FLAG_LIN_FPE_INTOVF:
-                    return "int overflow";
-                case MD_EXCEPTION_FLAG_LIN_FPE_FLTDIV:
-                    return "float / 0";
-                case MD_EXCEPTION_FLAG_LIN_FPE_FLTOVF:
-                    return "float overflow";
-                case MD_EXCEPTION_FLAG_LIN_FPE_FLTUND:
-                    return "floating point underflow";
-                case MD_EXCEPTION_FLAG_LIN_FPE_FLTRES:
-                    return "floating point numbers are imprecise";
-                case MD_EXCEPTION_FLAG_LIN_FPE_FLTINV:
-                    return "illegal floating point operation";
-                case MD_EXCEPTION_FLAG_LIN_FPE_FLTSUB:
-                    return "The table below is out of bounds";
-                default :
-                    return reinterpret_cast<const char *>(crash_signal_code);
-            }
-        }
-
-        const char *GetSIGSEGV(int crash_signal_code) const {
-            switch (static_cast<unsigned int>(crash_signal_code)) {
-                case MD_EXCEPTION_FLAG_LIN_SEGV_MAPERR:
-                    return "Invalid address";
-                case MD_EXCEPTION_FLAG_LIN_SEGV_ACCERR:
-                    return "address without access";
-                default :
-                    return reinterpret_cast<const char *>(crash_signal_code);
-            }
-        }
-
-        const char *GetSIGILL(int crash_signal_code) const {
-            switch (static_cast<unsigned int>(crash_signal_code)) {
-                case MD_EXCEPTION_FLAG_LIN_ILL_ILLOPC:
-                    return "Illegal opcode";
-                case MD_EXCEPTION_FLAG_LIN_ILL_ILLOPN:
-                    return "Illegal operand";
-                case MD_EXCEPTION_FLAG_LIN_ILL_ILLADR:
-                    return "Illegal addressing mode";
-                case MD_EXCEPTION_FLAG_LIN_ILL_ILLTRP:
-                    return "Illegal trap";
-                case MD_EXCEPTION_FLAG_LIN_ILL_PRVOPC:
-                    return "Privileged opcode";
-                case MD_EXCEPTION_FLAG_LIN_ILL_PRVREG:
-                    return "Privileged register";
-                case MD_EXCEPTION_FLAG_LIN_ILL_COPROC:
-                    return "Coprocessor error";
-                case MD_EXCEPTION_FLAG_LIN_ILL_BADSTK:
-                    return "Internal stack error";
-                default :
-                    return reinterpret_cast<const char *>(crash_signal_code);
-            }
-        }
-
         MinidumpWholeWriter(const ExceptionHandler::CrashContext *context,
                             const MappingList &mappings,
                             bool skip_dump_if_principal_mapping_not_referenced,
                             uintptr_t address_within_principal_mapping,
                             bool sanitize_stack,
-                            const babyte::MinidumpWholeExtraInfo &minidump_whole_extra_info,
-                            LinuxDumper *dumper)
+                            LinuxDumper *dumper,
+                            int log_descriptors[2])
                 : ucontext_(context ? &context->context : NULL),
 #if !defined(__ARM_EABI__) && !defined(__mips__)
                   float_state_(context ? &context->float_state : NULL),
@@ -189,8 +106,8 @@ namespace {
                           skip_dump_if_principal_mapping_not_referenced),
                   address_within_principal_mapping_(address_within_principal_mapping),
                   sanitize_stack_(sanitize_stack),
-                  minidump_whole_extra_info_(minidump_whole_extra_info),
-                  stringSplicing_(babyte::CrashInfo(dumper, babyte::MAX_LOG_NUM_)) {}
+                  stringSplicing_(babyte::CrashInfo(dumper, babyte::MAX_LOG_NUM_)),
+                  log_descriptors_(log_descriptors) {}
 
         ~MinidumpWholeWriter() { dumper_->ThreadsResume(); }
 
@@ -205,9 +122,12 @@ namespace {
         }
 
         void Dump() {
+            logger::write(">>> end1", sizeof(">>> end1"));
             stringSplicing_.append("------------------- NATIVE: CRASH INFO IN LIBRARY:\n");
             DumpProductInformation();
+            logger::write(">>> end2", sizeof(">>> end2"));
             DumpOSInformation();
+            logger::write(">>> end3", sizeof(">>> end3"));
             stringSplicing_.append("\n");
             DumpCpuInfo();
             stringSplicing_.append("\n");
@@ -218,10 +138,16 @@ namespace {
             stringSplicing_.append("\n");
             stringSplicing_.append("\n");
             stringSplicing_.append("------------------- CRASH THREAD TRACK:\n");
+            logger::write(">>> end3", sizeof(">>> end3"));
             DumpNativeThreadTrash();
-            minidump_whole_extra_info_.log_[0] = '\0';
-            my_strlcpy(minidump_whole_extra_info_.log_, stringSplicing_.log_line_,
-                       strlen(stringSplicing_.log_line_));
+            logger::write(">>> end4", sizeof(">>> end4"));
+
+            logger::write(">>> end5", sizeof(">>> end5"));
+            close(log_descriptors_[0]);
+            write(log_descriptors_[1],
+                  stringSplicing_.log_line_,
+                  strlen(stringSplicing_.log_line_));
+            logger::write(">>> end6", sizeof(">>> end6"));
             stringSplicing_.clear();
         }
 
@@ -324,7 +250,7 @@ namespace {
             stringSplicing_.append(dumper_->GetCrashSignalString());
             stringSplicing_.append(")");
             stringSplicing_.append(" ");
-            stringSplicing_.append(GetCrashSignalCodeString(
+            stringSplicing_.append(babyte::GetCrashSignalCodeString(
                     dumper_->crash_signal(),
                     dumper_->crash_signal_code()));
             stringSplicing_.append("\n");
@@ -376,8 +302,7 @@ namespace babyte {
                             const MappingList &mappings,
                             bool skip_dump_if_principal_mapping_not_referenced,
                             uintptr_t address_within_principal_mapping,
-                            bool sanitize_stack,
-                            const babyte::MinidumpWholeExtraInfo &minidump_whole_extra_info) {
+                            bool sanitize_stack, int log_descriptors[2]) {
         LinuxPtraceDumper dumper(crashing_process);
         const ExceptionHandler::CrashContext *context = NULL;
         if (blob) {
@@ -387,12 +312,15 @@ namespace babyte {
             dumper.SetCrashInfoFromSigInfo(context->siginfo);
             dumper.set_crash_thread(context->tid);
         }
+        logger::write(">>> end-1", sizeof(">>> end-1"));
+
         MinidumpWholeWriter writer(context, mappings,
                                    skip_dump_if_principal_mapping_not_referenced,
-                                   address_within_principal_mapping, sanitize_stack,
-                                   minidump_whole_extra_info, &dumper);
+                                   address_within_principal_mapping, sanitize_stack, &dumper,
+                                   log_descriptors);
         if (!writer.Init())
             return false;
+        logger::write(">>> end0", sizeof(">>> end0"));
         writer.Dump();
         return true;
     }

@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity() {
             GlobalScope.launch(Dispatchers.IO) {
                 Log.d(
                         TAG,
-                        "jniButton onClick thread = ${Thread.currentThread()}}"
+                        "jniButton onClick thread = ${Thread.currentThread()} id = ${Thread.currentThread().id}}"
                 )
                 nativeCrash()
             }

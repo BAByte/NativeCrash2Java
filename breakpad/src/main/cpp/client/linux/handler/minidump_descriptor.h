@@ -38,7 +38,6 @@
 
 #include "client/linux/handler/microdump_extra_info.h"
 #include "common/using_std_string.h"
-#include <client/linux/minidump_whole_writer/minidump_whole_track_extra_info.h>
 
 // This class describes how a crash dump should be generated, either:
 // - Writing a full minidump to a file in a given directory (the actual path,
@@ -106,8 +105,6 @@ namespace google_breakpad {
 
         const char *path() const { return c_path_; }
 
-        babyte::MinidumpWholeExtraInfo minidump_whole_extra_info_;
-
         bool IsMicrodumpOnConsole() const {
             return mode_ == kWriteMicrodumpToConsole;
         }
@@ -148,10 +145,6 @@ namespace google_breakpad {
         MicrodumpExtraInfo *microdump_extra_info() {
             assert(IsMicrodumpOnConsole());
             return &microdump_extra_info_;
-        }
-
-        babyte::MinidumpWholeExtraInfo *minidump_whole_extra_info() {
-            return &minidump_whole_extra_info_;
         }
 
     private:

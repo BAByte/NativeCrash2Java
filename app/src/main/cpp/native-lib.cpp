@@ -1,11 +1,8 @@
 #include <jni.h>
 #include <string>
 
-/**
- * 引起 crash
- */
 void Crash() {
-    volatile int *a = (int *) (NULL);
+    volatile int *a = (int *) nullptr;
     *a = 1;
 }
 

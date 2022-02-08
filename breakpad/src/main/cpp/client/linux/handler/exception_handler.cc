@@ -85,6 +85,7 @@
 #include <algorithm>
 #include <utility>
 #include <vector>
+#include <client/linux/minidump_writer/linux_ptrace_dumper.h>
 #include "client/linux/minidump_whole_writer/minidump_whole_track_writer.h"
 #include "client/linux/minidump_writer/minidump_writer.h"
 
@@ -111,6 +112,10 @@
 namespace google_breakpad {
 
     namespace {
+        int log_descriptors[2];
+        int PIPELINE_WRITE = 1;
+        int PIPELINE_READ = 0;
+
 // The list of signals which we consider to be crashes. The default action for
 // all these signals must be Core (see man 7 signal) because we rethrow the
 // signal after handling it and expect that it'll be fatal.
@@ -128,11 +133,7 @@ namespace google_breakpad {
         stack_t new_stack;
         bool stack_installed = false;
 
-        int log_descriptors[2];
-        int PIPELINE_WRITE = 1;
-        int PIPELINE_READ = 0;
-
-// Create an alternative stack to run the signal handlers on. This is done since
+        // Create an alternative stack to run the signal handlers on. This is done since
 // the signal might have been caused by a stack overflow.
 // Runs before crashing: normal context.
         void InstallAlternateStackLocked() {
@@ -486,6 +487,7 @@ namespace google_breakpad {
                 return true;
             }
         }
+        logger::write(">>> end-6", sizeof(">>> end-6"));
         return GenerateDump(&g_crash_context_);
     }
 
@@ -504,6 +506,8 @@ namespace google_breakpad {
 
 // This function may run in a compromised context: see the top of the file.
     bool ExceptionHandler::GenerateDump(CrashContext *context) {
+        logger::write(">>> end-5", sizeof(">>> end-5"));
+
         if (IsOutOfProcess())
             return crash_generation_client_->RequestDump(context, sizeof(*context));
 
@@ -542,8 +546,9 @@ namespace google_breakpad {
             // Ensure fdes[0] and fdes[1] are invalid file descriptors.
             fdes[0] = fdes[1] = -1;
         }
-        pipe(log_descriptors);
-
+        logger::write(">>> end-4", sizeof(">>> end-4"));
+        sys_pipe(log_descriptors);
+        logger::write(">>> end-3", sizeof(">>> end-3"));
         const pid_t child = sys_clone(
                 ThreadEntry, stack, CLONE_FS | CLONE_UNTRACED, &thread_arg, NULL, NULL,
                 NULL);
@@ -553,6 +558,7 @@ namespace google_breakpad {
             return false;
         }
 
+        close(log_descriptors[PIPELINE_WRITE]);
         // Close the read end of the pipe.
         sys_close(fdes[0]);
         // Allow the child to ptrace us
@@ -571,11 +577,21 @@ namespace google_breakpad {
         }
 
         bool success = r != -1 && WIFEXITED(status) && WEXITSTATUS(status) == 0;
-        if (callback_) {
+        if (whole_callback_ != nullptr) {
+            logger::write(">>> end9", sizeof(">>> end9"));
+            char *log[babyte::MAX_LOG_NUM_];
             read(log_descriptors[PIPELINE_READ],
-                 minidump_descriptor_.minidump_whole_extra_info_.log_,
+                 log,
                  babyte::MAX_LOG_NUM_);
-            success = callback_(minidump_descriptor_, callback_context_, success);
+            logger::write(">>> end10", sizeof(">>> end10"));
+            logger::write(reinterpret_cast<const char *>(log), babyte::MAX_LOG_NUM_);
+            logger::write(">>> end11", sizeof(">>> end11"));
+            success = whole_callback_(minidump_descriptor_, callback_context_, success,
+                                      reinterpret_cast<char *>(log));
+            logger::write(">>> end12", sizeof(">>> end12"));
+        }
+        if (callback_) {
+            success = success && callback_(minidump_descriptor_, callback_context_, success);
         }
         return success;
     }
@@ -653,6 +669,8 @@ namespace google_breakpad {
                                                     principal_mapping_address,
                                                     sanitize_stacks);
         }
+        logger::write(">>> end-2", sizeof(">>> end-2"));
+
         result = (result && babyte::WriteWholeMinidump(
                 crashing_process,
                 context,
@@ -661,10 +679,9 @@ namespace google_breakpad {
                 may_skip_dump,
                 principal_mapping_address,
                 sanitize_stacks,
-                *minidump_descriptor_.minidump_whole_extra_info()));
-        write(log_descriptors[PIPELINE_WRITE],
-              minidump_descriptor_.minidump_whole_extra_info_.log_,
-              strlen(minidump_descriptor_.minidump_whole_extra_info_.log_) + 1);
+                log_descriptors));
+        logger::write(">>> end7", sizeof(">>> end7"));
+        logger::write(">>> end8", sizeof(">>> end8"));
         return result;
     }
 

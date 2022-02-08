@@ -8,7 +8,6 @@ set(BREAKPAD_ROOT .)
 include_directories(${BREAKPAD_ROOT} ${BREAKPAD_ROOT}/common/android/include)
 file(GLOB BREAKPAD_SOURCES_COMMON
         breakpad.cpp
-        ${BREAKPAD_ROOT}/third_party/thread/java_thread.cc
         ${BREAKPAD_ROOT}/client/linux/minidump_whole_writer/minidump_whole_track_writer.cc
         ${BREAKPAD_ROOT}/third_party/utils/*.cpp
 

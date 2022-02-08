@@ -104,6 +104,11 @@ namespace google_breakpad {
                                          void *context,
                                          bool succeeded);
 
+        typedef bool (*MinidumpWholeCallback)(const MinidumpDescriptor &descriptor,
+                                              void *context,
+                                              bool succeeded,
+                                              char *log);
+
         // In certain cases, a user may wish to handle the generation of the minidump
         // themselves. In this case, they can install a handler callback which is
         // called when a crash has occurred. If this function returns true, no other
@@ -136,12 +141,17 @@ namespace google_breakpad {
         const MinidumpDescriptor &minidump_descriptor() const {
             return minidump_descriptor_;
         }
+
         void set_minidump_descriptor(const MinidumpDescriptor &descriptor) {
             minidump_descriptor_ = descriptor;
         }
 
         void set_crash_handler(HandlerCallback callback) {
             crash_handler_ = callback;
+        }
+
+        void set_whole_callback(MinidumpWholeCallback callback) {
+            whole_callback_ = callback;
         }
 
         void set_crash_generation_client(CrashGenerationClient *client) {
@@ -251,6 +261,7 @@ namespace google_breakpad {
 
         const FilterCallback filter_;
         const MinidumpCallback callback_;
+        volatile MinidumpWholeCallback whole_callback_;
         void *const callback_context_;
 
         scoped_ptr<CrashGenerationClient> crash_generation_client_;

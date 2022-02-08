@@ -50,8 +50,7 @@ namespace google_breakpad {
               skip_dump_if_principal_mapping_not_referenced_(
                       descriptor.skip_dump_if_principal_mapping_not_referenced_),
               sanitize_stacks_(descriptor.sanitize_stacks_),
-              microdump_extra_info_(descriptor.microdump_extra_info_),
-              minidump_whole_extra_info_(descriptor.minidump_whole_extra_info_) {
+              microdump_extra_info_(descriptor.microdump_extra_info_) {
         // The copy constructor is not allowed to be called on a MinidumpDescriptor
         // with a valid path_, as getting its c_path_ would require the heap which
         // can cause problems in compromised environments.
@@ -78,7 +77,6 @@ namespace google_breakpad {
                 descriptor.skip_dump_if_principal_mapping_not_referenced_;
         sanitize_stacks_ = descriptor.sanitize_stacks_;
         microdump_extra_info_ = descriptor.microdump_extra_info_;
-        minidump_whole_extra_info_ = descriptor.minidump_whole_extra_info_;
         return *this;
     }
 

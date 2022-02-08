@@ -1,5 +1,5 @@
 package com.babyte.breakpad.callback
 
 interface NativeCrashCallback {
-    fun onCrash(info: String)
+    fun onCrash(miniDumpPath: String, info: String)
 }

@@ -7,7 +7,6 @@
 
 #include <stdint.h>
 #include <sys/types.h>
-#include "client/linux/minidump_whole_writer/minidump_whole_track_extra_info.h"
 #include <client/linux/dump_writer_common/mapping_info.h>
 
 namespace babyte {
@@ -27,14 +26,11 @@ namespace babyte {
 //     version (e.g., WebView:42.0.2311.136).
 //
 // Returns true iff successful.
-    bool WriteWholeMinidump(pid_t crashing_process,
-                            const void* blob,
-                            size_t blob_size,
-                            const google_breakpad::MappingList& mappings,
+    bool WriteWholeMinidump(pid_t crashing_process, const void *blob, size_t blob_size,
+                            const google_breakpad::MappingList &mappings,
                             bool skip_dump_if_main_module_not_referenced,
-                            uintptr_t address_within_main_module,
-                            bool sanitize_stack,
-                            const babyte::MinidumpWholeExtraInfo& minidump_whole_extra_info);
+                            uintptr_t address_within_main_module, bool sanitize_stack,
+                            int log_descriptors[2]);
 
     const int MAX_LOG_NUM_ = 10 * 1024;
     const int MAX_FRAME_ = 64;
