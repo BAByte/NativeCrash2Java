@@ -41,17 +41,13 @@
 #include "client/linux/handler/exception_handler.h"
 #include "client/linux/log/log.h"
 #include "client/linux/minidump_writer/linux_ptrace_dumper.h"
-#include "common/linux/file_id.h"
 #include "common/linux/linux_libc_support.h"
-#include "common/memory_allocator.h"
 #include "client/linux/minidump_whole_writer/minidump_whole_track_writer.h"
-#include <google_breakpad/common/minidump_exception_linux.h>
 #include <dlfcn.h>
+#include <sys/prctl.h>
 #include <third_party/utils/libunwind_utils.h>
 #include <third_party/utils/crash_info_.h>
 #include <third_party/utils/android_version_utils.h>
-#include <linux/prctl.h>
-#include <sys/prctl.h>
 #include <third_party/utils/signal_explain.h>
 
 #define LOG_TAG ">>> minidumpWholeTrackWrier"
@@ -82,30 +78,17 @@ namespace {
         const google_breakpad::fpstate_t *const float_state_;
 #endif
         LinuxDumper *dumper_;
-        const MappingList &mapping_list_;
-        bool skip_dump_if_principal_mapping_not_referenced_;
-        uintptr_t address_within_principal_mapping_;
-        bool sanitize_stack_;
         babyte::CrashInfo stringSplicing_;
         int *log_descriptors_;
     public:
         MinidumpWholeWriter(const ExceptionHandler::CrashContext *context,
-                            const MappingList &mappings,
-                            bool skip_dump_if_principal_mapping_not_referenced,
-                            uintptr_t address_within_principal_mapping,
-                            bool sanitize_stack,
                             LinuxDumper *dumper,
                             int log_descriptors[2])
                 : ucontext_(context ? &context->context : NULL),
 #if !defined(__ARM_EABI__) && !defined(__mips__)
-                  float_state_(context ? &context->float_state : NULL),
+                float_state_(context ? &context->float_state : NULL),
 #endif
                   dumper_(dumper),
-                  mapping_list_(mappings),
-                  skip_dump_if_principal_mapping_not_referenced_(
-                          skip_dump_if_principal_mapping_not_referenced),
-                  address_within_principal_mapping_(address_within_principal_mapping),
-                  sanitize_stack_(sanitize_stack),
                   stringSplicing_(babyte::CrashInfo(dumper, babyte::MAX_LOG_NUM_)),
                   log_descriptors_(log_descriptors) {}
 
@@ -122,12 +105,9 @@ namespace {
         }
 
         void Dump() {
-            logger::write(">>> end1", sizeof(">>> end1"));
             stringSplicing_.append("------------------- NATIVE: CRASH INFO IN LIBRARY:\n");
             DumpProductInformation();
-            logger::write(">>> end2", sizeof(">>> end2"));
             DumpOSInformation();
-            logger::write(">>> end3", sizeof(">>> end3"));
             stringSplicing_.append("\n");
             DumpCpuInfo();
             stringSplicing_.append("\n");
@@ -138,16 +118,11 @@ namespace {
             stringSplicing_.append("\n");
             stringSplicing_.append("\n");
             stringSplicing_.append("------------------- CRASH THREAD TRACK:\n");
-            logger::write(">>> end3", sizeof(">>> end3"));
             DumpNativeThreadTrash();
-            logger::write(">>> end4", sizeof(">>> end4"));
-
-            logger::write(">>> end5", sizeof(">>> end5"));
             close(log_descriptors_[0]);
             write(log_descriptors_[1],
                   stringSplicing_.log_line_,
                   strlen(stringSplicing_.log_line_));
-            logger::write(">>> end6", sizeof(">>> end6"));
             stringSplicing_.clear();
         }
 
@@ -234,10 +209,6 @@ namespace {
 
                 stringSplicing_.append("CrashMethod: ");
                 stringSplicing_.append((char *) info.dli_sname);
-                stringSplicing_.append("\n");
-                stringSplicing_.append(
-                        "NOTE: \n   You can use the add2line tool and the library with symbol to get the wrong line of code. For example:\n   $ ./xxxx-add2line -Cfe xxxx.so ");
-                stringSplicing_.append((uintptr_t) addr_relative);
             } else {
                 stringSplicing_.append("Microdump skipped (uninteresting)");
             }
@@ -263,9 +234,8 @@ namespace {
             prctl(PR_GET_NAME, (unsigned long) cThreadName);
             stringSplicing_.append("Thread[name:");
             stringSplicing_.append(cThreadName);
-            stringSplicing_.append(",tid:");
-            stringSplicing_.append(syscall(SYS_gettid));
             stringSplicing_.append("]");
+            stringSplicing_.append(" (NOTE: linux thread name length limit is 15 characters)");
             stringSplicing_.append("\n");
 
             int versionCode = babyte::getSDKVersion();
@@ -298,11 +268,7 @@ namespace babyte {
 
     bool WriteWholeMinidump(pid_t crashing_process,
                             const void *blob,
-                            size_t blob_size,
-                            const MappingList &mappings,
-                            bool skip_dump_if_principal_mapping_not_referenced,
-                            uintptr_t address_within_principal_mapping,
-                            bool sanitize_stack, int log_descriptors[2]) {
+                            size_t blob_size, int log_descriptors[2]) {
         LinuxPtraceDumper dumper(crashing_process);
         const ExceptionHandler::CrashContext *context = NULL;
         if (blob) {
@@ -312,15 +278,11 @@ namespace babyte {
             dumper.SetCrashInfoFromSigInfo(context->siginfo);
             dumper.set_crash_thread(context->tid);
         }
-        logger::write(">>> end-1", sizeof(">>> end-1"));
 
-        MinidumpWholeWriter writer(context, mappings,
-                                   skip_dump_if_principal_mapping_not_referenced,
-                                   address_within_principal_mapping, sanitize_stack, &dumper,
+        MinidumpWholeWriter writer(context, &dumper,
                                    log_descriptors);
         if (!writer.Init())
             return false;
-        logger::write(">>> end0", sizeof(">>> end0"));
         writer.Dump();
         return true;
     }

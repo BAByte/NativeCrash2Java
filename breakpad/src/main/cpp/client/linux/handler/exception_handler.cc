@@ -85,7 +85,6 @@
 #include <algorithm>
 #include <utility>
 #include <vector>
-#include <client/linux/minidump_writer/linux_ptrace_dumper.h>
 #include "client/linux/minidump_whole_writer/minidump_whole_track_writer.h"
 #include "client/linux/minidump_writer/minidump_writer.h"
 
@@ -115,6 +114,7 @@ namespace google_breakpad {
         int log_descriptors[2];
         int PIPELINE_WRITE = 1;
         int PIPELINE_READ = 0;
+        char *log[babyte::MAX_LOG_NUM_];
 
 // The list of signals which we consider to be crashes. The default action for
 // all these signals must be Core (see man 7 signal) because we rethrow the
@@ -239,8 +239,7 @@ namespace google_breakpad {
         if (server_fd >= 0)
             crash_generation_client_.reset(CrashGenerationClient::TryCreate(server_fd));
 
-        if (!IsOutOfProcess() && !minidump_descriptor_.IsFD() &&
-            !minidump_descriptor_.IsMicrodumpOnConsole())
+        if (minidump_descriptor_.IsFile())
             minidump_descriptor_.UpdatePath();
 
 #if defined(__ANDROID__)
@@ -487,7 +486,6 @@ namespace google_breakpad {
                 return true;
             }
         }
-        logger::write(">>> end-6", sizeof(">>> end-6"));
         return GenerateDump(&g_crash_context_);
     }
 
@@ -506,8 +504,6 @@ namespace google_breakpad {
 
 // This function may run in a compromised context: see the top of the file.
     bool ExceptionHandler::GenerateDump(CrashContext *context) {
-        logger::write(">>> end-5", sizeof(">>> end-5"));
-
         if (IsOutOfProcess())
             return crash_generation_client_->RequestDump(context, sizeof(*context));
 
@@ -546,9 +542,7 @@ namespace google_breakpad {
             // Ensure fdes[0] and fdes[1] are invalid file descriptors.
             fdes[0] = fdes[1] = -1;
         }
-        logger::write(">>> end-4", sizeof(">>> end-4"));
         sys_pipe(log_descriptors);
-        logger::write(">>> end-3", sizeof(">>> end-3"));
         const pid_t child = sys_clone(
                 ThreadEntry, stack, CLONE_FS | CLONE_UNTRACED, &thread_arg, NULL, NULL,
                 NULL);
@@ -578,21 +572,16 @@ namespace google_breakpad {
 
         bool success = r != -1 && WIFEXITED(status) && WEXITSTATUS(status) == 0;
         if (whole_callback_ != nullptr) {
-            logger::write(">>> end9", sizeof(">>> end9"));
-            char *log[babyte::MAX_LOG_NUM_];
             read(log_descriptors[PIPELINE_READ],
                  log,
                  babyte::MAX_LOG_NUM_);
-            logger::write(">>> end10", sizeof(">>> end10"));
-            logger::write(reinterpret_cast<const char *>(log), babyte::MAX_LOG_NUM_);
-            logger::write(">>> end11", sizeof(">>> end11"));
             success = whole_callback_(minidump_descriptor_, callback_context_, success,
                                       reinterpret_cast<char *>(log));
-            logger::write(">>> end12", sizeof(">>> end12"));
         }
         if (callback_) {
             success = success && callback_(minidump_descriptor_, callback_context_, success);
         }
+        close(log_descriptors[PIPELINE_READ]);
         return success;
     }
 
@@ -634,7 +623,7 @@ namespace google_breakpad {
         const uintptr_t principal_mapping_address =
                 minidump_descriptor_.address_within_principal_mapping();
         const bool sanitize_stacks = minidump_descriptor_.sanitize_stacks();
-        bool result = false;
+        bool result = true;
 
         if (minidump_descriptor_.IsMicrodumpOnConsole()) {
             result = google_breakpad::WriteMicrodump(
@@ -657,7 +646,7 @@ namespace google_breakpad {
                                                     may_skip_dump,
                                                     principal_mapping_address,
                                                     sanitize_stacks);
-        } else {
+        } else if(minidump_descriptor_.IsFile()) {
             result = google_breakpad::WriteMinidump(minidump_descriptor_.path(),
                                                     minidump_descriptor_.size_limit(),
                                                     crashing_process,
@@ -669,19 +658,11 @@ namespace google_breakpad {
                                                     principal_mapping_address,
                                                     sanitize_stacks);
         }
-        logger::write(">>> end-2", sizeof(">>> end-2"));
-
         result = (result && babyte::WriteWholeMinidump(
                 crashing_process,
                 context,
                 context_size,
-                mapping_list_,
-                may_skip_dump,
-                principal_mapping_address,
-                sanitize_stacks,
                 log_descriptors));
-        logger::write(">>> end7", sizeof(">>> end7"));
-        logger::write(">>> end8", sizeof(">>> end8"));
         return result;
     }
 
@@ -703,8 +684,7 @@ namespace google_breakpad {
 #endif
 
     bool ExceptionHandler::WriteMinidump() {
-        if (!IsOutOfProcess() && !minidump_descriptor_.IsFD() &&
-            !minidump_descriptor_.IsMicrodumpOnConsole()) {
+        if (minidump_descriptor_.IsFile()){
             // Update the path of the minidump so that this can be called multiple times
             // and new files are created for each minidump.  This is done before the
             // generation happens, as clients may want to access the MinidumpDescriptor

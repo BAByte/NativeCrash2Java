@@ -1,8 +1,9 @@
 package com.babyte.breakpad
 
-import android.util.Log
 import androidx.annotation.Keep
 import com.babyte.breakpad.callback.NativeCrashCallback
+import com.babyte.breakpad.data.CrashInfo
+import java.lang.StringBuilder
 
 
 /**
@@ -10,24 +11,55 @@ import com.babyte.breakpad.callback.NativeCrashCallback
  */
 @Keep
 object BaByteBreakpad {
+    private var isWhole = false
+
     init {
         System.loadLibrary("breakpad")
     }
 
     @JvmStatic
-    private val nativeCrashCallback = object : NativeCrashCallback {
-        override fun onCrash(miniDumpPath: String, info: String) {
-            Log.e("NativeCrashCallback",info)
-            for ((thread,stack) in Thread.getAllStackTraces()) {
-                println("NativeCrashCallback thread = ${thread.name}")
+
+    private external fun initBreakpadNative(path: String?, callback: NativeCrashCallback)
+
+    fun initBreakpad(path: String, nativeCrashWholeCallBack: (CrashInfo) -> Unit) {
+        initBreakpadNative(path, object : NativeCrashCallback {
+            override fun onCrash(miniDumpPath: String, info: String, crashThreadName: String) {
+                nativeCrashWholeCallBack.invoke(
+                    CrashInfo(
+                        miniDumpPath,
+                        info,
+                        getStack(crashThreadName)
+                    )
+                )
+            }
+        })
+    }
+
+    fun initBreakpad(nativeCrashInfoCallBack: (CrashInfo) -> Unit) {
+        initBreakpadNative(null, object : NativeCrashCallback {
+            override fun onCrash(miniDumpPath: String, info: String, crashThreadName: String) {
+                nativeCrashInfoCallBack.invoke(
+                    CrashInfo(
+                        null,
+                        info,
+                        getStack(crashThreadName)
+                    )
+                )
+            }
+        })
+    }
+
+    private fun getStack(crashThreadName: String): String {
+        val stringBuilder = StringBuilder()
+        for ((thread, stack) in Thread.getAllStackTraces()) {
+            if (thread.name.contains(crashThreadName)) {
+                stringBuilder.appendLine("$thread")
+                stack.forEach {
+                    stringBuilder.appendLine("     at $it")
+                }
             }
         }
+        return stringBuilder.toString()
     }
 
-    external fun initBreakpadNative(path: String, callback: NativeCrashCallback)
-
-    fun initBreakpad(path: String) {
-        initBreakpadNative(path, nativeCrashCallback)
-        Thread.currentThread()
-    }
 }

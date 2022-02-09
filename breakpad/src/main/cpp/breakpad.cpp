@@ -7,6 +7,9 @@
 #include <semaphore.h>
 #include <sys/system_properties.h>
 #include <client/linux/log/log.h>
+#include <linux/prctl.h>
+#include <sys/prctl.h>
+
 #define LOG_TAG ">>> breakpad_cpp"
 
 #define ALOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__)
@@ -26,6 +29,7 @@ class CrashInfo {
 public:
     char *native_log;
     char *path;
+    char *crash_thread_name;
 };
 
 volatile CrashInfo *g_crash_info = nullptr;
@@ -34,28 +38,16 @@ bool DumpCallback(const google_breakpad::MinidumpDescriptor &descriptor,
                   void *context,
                   bool succeeded,
                   char *log) {
-    ALOGD("===============crrrrash================");
-    ALOGD("Dump path: %s\n", descriptor.path());
-    jboolean needAttach = false;
-    JNIEnv *env;
-    jint res = g_jvm->GetEnv((void **) &env, JNI_VERSION_1_6);
-    if (res == JNI_EDETACHED) {
-        int result = g_jvm->AttachCurrentThread(&env, 0);
-        if (result != 0) {
-            return succeeded;
-        }
-        needAttach = true;
-    }
+    char cThreadName[32] = {0};
+    prctl(PR_GET_NAME, (unsigned long) cThreadName);
+
     g_crash_info = new CrashInfo();
     g_crash_info->native_log = log;
     g_crash_info->path = const_cast<char *>(descriptor.path());
-    if (needAttach) {
-        g_jvm->DetachCurrentThread();
-    }
+    g_crash_info->crash_thread_name = cThreadName;
+
     sem_post(&g_cat_java_crash_semaphore);
-    ALOGE(">>> 1");
     sem_wait(&g_done_semaphore);
-    ALOGE(">>>> 4");
     return succeeded;
 }
 
@@ -65,16 +57,22 @@ void notify2Java(JNIEnv *env) {
     jstring error_path_js = env->NewStringUTF(error_path);
     jstring info_js = nullptr;
     auto error = "get crash error";
-    auto new_2line = "\n\n";
     jstring error_js = env->NewStringUTF(error);
+
     if (g_crash_info != nullptr) {
-        char final_info[strlen(g_crash_info->native_log) + strlen(new_2line)];
+        char final_info[strlen(g_crash_info->native_log)];
         strcat(final_info, g_crash_info->native_log);
-        strcat(final_info, new_2line);
-        __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG,   "%s", final_info);
-        info_js = env->NewStringUTF(final_info);
+
+        jbyteArray array = env->NewByteArray(strlen(final_info));
+        env->SetByteArrayRegion(array, 0, strlen(final_info),
+                                reinterpret_cast<const jbyte *>(final_info));
+        jstring strEncode = env->NewStringUTF("UTF-8");
+        jclass cls = env->FindClass("java/lang/String");
+        jmethodID ctor = env->GetMethodID(cls, "<init>", "([BLjava/lang/String;)V");
+        info_js = (jstring) env->NewObject(cls, ctor, array, strEncode);
         path_js = env->NewStringUTF(g_crash_info->path);
     }
+
     if (g_crash_callback_method != nullptr) {
         if (info_js == nullptr) {
             info_js = error_js;
@@ -82,9 +80,9 @@ void notify2Java(JNIEnv *env) {
         if (path_js == nullptr) {
             path_js = error_path_js;
         }
-
+        jstring crashThreadName_js = env->NewStringUTF(g_crash_info->crash_thread_name);
         env->CallVoidMethod(g_crash_callback_obj, g_crash_callback_method,
-                            path_js, info_js);
+                            path_js, info_js, crashThreadName_js);
     } else {
         ALOGE("threadHandler g_crash_callback_method == null");
     }
@@ -105,14 +103,11 @@ void *CallBackThreadHandler(void *argv) {
         needAttach = true;
     }
     sem_wait(&g_cat_java_crash_semaphore);
-    ALOGE(">>>> 1.1");
     notify2Java(env);
     if (needAttach) {
         g_jvm->DetachCurrentThread();
     }
-    ALOGE(">>>> 2");
     sem_post(&g_done_semaphore);
-    ALOGE(">>>> 3");
     delete g_crash_info;
     return nullptr;
 }
@@ -136,10 +131,26 @@ static void initCallbackObject(JNIEnv *env, jobject callback) {
         return;
     }
     g_crash_callback_method = env->GetMethodID(cls, "onCrash",
-                                               "(Ljava/lang/String;Ljava/lang/String;)V");
+                                               "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
     if (g_crash_callback_method == NULL) {
         ALOGE("CallBackThreadHandler get jmethodId error");
     }
+}
+
+void just_2_java() {
+    google_breakpad::MinidumpDescriptor descriptor(google_breakpad::MinidumpDescriptor::kMinidumpJustJava);
+    static google_breakpad::ExceptionHandler eh(descriptor, nullptr, NULL, NULL,
+                                                true, -1);
+    eh.set_whole_callback(DumpCallback);
+}
+
+void dump_and_2_java(JNIEnv *env, jstring path_) {
+    const char *path = env->GetStringUTFChars(path_, 0);
+    google_breakpad::MinidumpDescriptor descriptor(path);
+    static google_breakpad::ExceptionHandler eh(descriptor, nullptr, NULL, NULL,
+                                                true, -1);
+    eh.set_whole_callback(DumpCallback);
+    env->ReleaseStringUTFChars(path_, path);
 }
 
 extern "C"
@@ -147,14 +158,11 @@ JNIEXPORT void JNICALL
 Java_com_babyte_breakpad_BaByteBreakpad_initBreakpadNative(JNIEnv *env, jobject thiz, jstring path_,
                                                            jobject callback) {
     initCallbackObject(env, callback);
-
-    const char *path = env->GetStringUTFChars(path_, 0);
-    google_breakpad::MinidumpDescriptor descriptor(path);
-
-    static google_breakpad::ExceptionHandler eh(descriptor, nullptr, NULL, NULL,
-                                                true, -1);
-    eh.set_whole_callback(DumpCallback);
-    env->ReleaseStringUTFChars(path_, path);
+    if (path_ != nullptr) {
+        dump_and_2_java(env, path_);
+    } else {
+        just_2_java();
+    }
 }
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {

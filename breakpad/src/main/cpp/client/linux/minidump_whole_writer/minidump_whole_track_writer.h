@@ -27,12 +27,9 @@ namespace babyte {
 //
 // Returns true iff successful.
     bool WriteWholeMinidump(pid_t crashing_process, const void *blob, size_t blob_size,
-                            const google_breakpad::MappingList &mappings,
-                            bool skip_dump_if_main_module_not_referenced,
-                            uintptr_t address_within_main_module, bool sanitize_stack,
                             int log_descriptors[2]);
 
-    const int MAX_LOG_NUM_ = 10 * 1024;
+    const int MAX_LOG_NUM_ = 4 * 1024;
     const int MAX_FRAME_ = 64;
     const int ANDROID_L = 21;
     const int ANDROID_N = 24;

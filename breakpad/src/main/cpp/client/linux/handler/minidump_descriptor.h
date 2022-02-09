@@ -51,6 +51,9 @@ namespace google_breakpad {
         struct MicrodumpOnConsole {
         };
         static const MicrodumpOnConsole kMicrodumpOnConsole;
+        struct MinidumpJustJava {
+        };
+        static const MinidumpJustJava kMinidumpJustJava;
 
         MinidumpDescriptor()
                 : mode_(kUninitialized),
@@ -90,6 +93,16 @@ namespace google_breakpad {
                   skip_dump_if_principal_mapping_not_referenced_(false),
                   sanitize_stacks_(false) {}
 
+        explicit MinidumpDescriptor(const MinidumpJustJava &)
+                : mode_(kWriteMicrodumpJustToJava),
+                  fd_(-1),
+                  c_path_(NULL),
+                  size_limit_(-1),
+                  address_within_principal_mapping_(0),
+                  skip_dump_if_principal_mapping_not_referenced_(false),
+                  sanitize_stacks_(false) {
+        }
+
 
         explicit MinidumpDescriptor(const MinidumpDescriptor &descriptor);
 
@@ -100,6 +113,8 @@ namespace google_breakpad {
         bool IsFD() const { return mode_ == kWriteMinidumpToFd; }
 
         int fd() const { return fd_; }
+
+        bool IsFile() const { return mode_ == kWriteMinidumpToFile; }
 
         string directory() const { return directory_; }
 
@@ -153,7 +168,7 @@ namespace google_breakpad {
             kWriteMinidumpToFile,
             kWriteMinidumpToFd,
             kWriteMicrodumpToConsole,
-            kWriteMinidumpOnWhole
+            kWriteMicrodumpJustToJava,
         };
 
         // Specifies the dump mode (see DumpMode).

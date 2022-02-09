@@ -143,7 +143,7 @@ void babyte::LibunwindUtils::format(babyte::CrashInfo *trackInfo, int line) {
     Dl_info info;
     char num[16];
     sprintf(num,"%02d",line);
-    trackInfo->append("#");
+    trackInfo->append("     #");
     trackInfo->append(num);
     if (dladdr((void *) pc, &info) != 0 && info.dli_fname != NULL) {
         if (NULL != pc) {

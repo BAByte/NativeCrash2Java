@@ -23,14 +23,18 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         //初始化
-        BaByteBreakpad.initBreakpad(this.cacheDir.absolutePath)
+        BaByteBreakpad.initBreakpad(this.cacheDir.absolutePath) { info ->
+            Log.e("BaByteBreakpad", info.path ?: "")
+            Log.e("BaByteBreakpad", info.info)
+            Log.e("BaByteBreakpad", " \n${info.jvmThreadTrack}")
+        }
 
         val jniButton = findViewById<Button>(R.id.jniCrash)
         jniButton.setOnClickListener {
             GlobalScope.launch(Dispatchers.IO) {
                 Log.d(
-                        TAG,
-                        "jniButton onClick thread = ${Thread.currentThread()} id = ${Thread.currentThread().id}}"
+                    TAG,
+                    "jniButton onClick thread = ${Thread.currentThread()} id = ${Thread.currentThread().id}}"
                 )
                 nativeCrash()
             }
