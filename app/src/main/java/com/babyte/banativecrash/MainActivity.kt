@@ -24,9 +24,9 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         //初始化
         BaByteBreakpad.initBreakpad(this.cacheDir.absolutePath) { info ->
-            Log.e("BaByteBreakpad", info.path ?: "")
-            Log.e("BaByteBreakpad", info.info)
-            Log.e("BaByteBreakpad", " \n${info.jvmThreadTrack}")
+            Log.e(TAG, info.path ?: "")
+            Log.e(TAG, info.info)
+            Log.e(TAG, " \n${info.jvmThreadTrack}")
         }
 
         val jniButton = findViewById<Button>(R.id.jniCrash)

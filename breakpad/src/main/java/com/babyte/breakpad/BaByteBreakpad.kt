@@ -3,7 +3,6 @@ package com.babyte.breakpad
 import androidx.annotation.Keep
 import com.babyte.breakpad.callback.NativeCrashCallback
 import com.babyte.breakpad.data.CrashInfo
-import java.lang.StringBuilder
 
 
 /**
@@ -11,8 +10,6 @@ import java.lang.StringBuilder
  */
 @Keep
 object BaByteBreakpad {
-    private var isWhole = false
-
     init {
         System.loadLibrary("breakpad")
     }
@@ -21,8 +18,12 @@ object BaByteBreakpad {
 
     private external fun initBreakpadNative(path: String?, callback: NativeCrashCallback)
 
-    fun initBreakpad(path: String, nativeCrashWholeCallBack: (CrashInfo) -> Unit) {
-        initBreakpadNative(path, object : NativeCrashCallback {
+    /**
+     * @param dir 输出minidump文件到dir目录
+     * @param nativeCrashWholeCallBack 将minidump文件路径，native层的异常信息，java层异常信息回调给开发者
+     */
+    fun initBreakpad(dir: String, nativeCrashWholeCallBack: (CrashInfo) -> Unit) {
+        initBreakpadNative(dir, object : NativeCrashCallback {
             override fun onCrash(miniDumpPath: String, info: String, crashThreadName: String) {
                 nativeCrashWholeCallBack.invoke(
                     CrashInfo(
@@ -61,5 +62,4 @@ object BaByteBreakpad {
         }
         return stringBuilder.toString()
     }
-
 }
