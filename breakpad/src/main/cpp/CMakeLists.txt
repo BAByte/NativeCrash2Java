@@ -5,7 +5,7 @@
 
 cmake_minimum_required(VERSION 3.4.1)
 set(BREAKPAD_ROOT .)
-include_directories(${BREAKPAD_ROOT} ${BREAKPAD_ROOT}/common/android/include)
+include_directories(${BREAKPAD_ROOT})
 file(GLOB BREAKPAD_SOURCES_COMMON
         breakpad.cpp
         ${BREAKPAD_ROOT}/client/linux/minidump_whole_writer/minidump_whole_track_writer.cc
