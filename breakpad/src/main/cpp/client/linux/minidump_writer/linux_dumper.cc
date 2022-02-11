@@ -309,7 +309,6 @@ bool LinuxDumper::LateInit() {
 #if defined(__CHROMEOS__)
   CrOSPostProcessMappings(mappings_);
 #endif
-
   return true;
 }
 
@@ -681,7 +680,6 @@ void LinuxDumper::ParseLoadedElfProgramHeaders(ElfW(Ehdr)* ehdr,
     }
     phdr_addr += sizeof(phdr);
   }
-
   *min_vaddr_ptr = min_vaddr;
   *dyn_vaddr_ptr = dyn_vaddr;
   *dyn_count_ptr = dyn_count;
@@ -691,6 +689,10 @@ bool LinuxDumper::HasAndroidPackedRelocations(uintptr_t load_bias,
                                               uintptr_t dyn_vaddr,
                                               size_t dyn_count) {
   uintptr_t dyn_addr = load_bias + dyn_vaddr;
+  //预防dyn_count无限大的问题，在oppo A33上出现过，太大就不做这步了
+  if (dyn_count > 4 * 1024) {
+      return false;
+  }
   for (size_t i = 0; i < dyn_count; ++i) {
     ElfW(Dyn) dyn;
     CopyFromProcess(&dyn, pid_,
