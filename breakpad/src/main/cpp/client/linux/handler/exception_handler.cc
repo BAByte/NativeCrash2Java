@@ -448,7 +448,6 @@ namespace google_breakpad {
     bool ExceptionHandler::HandleSignal(int /*sig*/, siginfo_t *info, void *uc) {
         if (filter_ && !filter_(callback_context_))
             return false;
-
         // Allow ourselves to be dumped if the signal is trusted.
         bool signal_trusted = info->si_code > 0;
         bool signal_pid_trusted = info->si_code == SI_USER ||

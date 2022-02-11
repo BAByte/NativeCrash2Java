@@ -9,7 +9,11 @@ include_directories(${BREAKPAD_ROOT})
 file(GLOB BREAKPAD_SOURCES_COMMON
         breakpad.cpp
         ${BREAKPAD_ROOT}/client/linux/minidump_whole_writer/minidump_whole_track_writer.cc
-        ${BREAKPAD_ROOT}/third_party/utils/*.cpp
+        ${BREAKPAD_ROOT}/third_party/utils/libunwind/libunwind_utils.cpp
+        ${BREAKPAD_ROOT}/third_party/utils/android_version_utils.cpp
+        ${BREAKPAD_ROOT}/third_party/utils/crash_info_utils.cpp
+        ${BREAKPAD_ROOT}/third_party/utils/ndk_dlopen/dlopen.c
+        ${BREAKPAD_ROOT}/third_party/utils/libbacktrace/libbacktrace_utils.cpp
 
         ${BREAKPAD_ROOT}/client/linux/crash_generation/crash_generation_client.cc
         ${BREAKPAD_ROOT}/client/linux/dump_writer_common/thread_info.cc

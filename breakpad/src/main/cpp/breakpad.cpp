@@ -9,6 +9,9 @@
 #include <client/linux/log/log.h>
 #include <linux/prctl.h>
 #include <sys/prctl.h>
+#include <third_party/utils/ndk_dlopen/dlopen.h>
+#include <third_party/utils/android_version_utils.h>
+#include <client/linux/minidump_whole_writer/minidump_whole_track_writer.h>
 
 #define LOG_TAG ">>> breakpad_cpp"
 
@@ -137,8 +140,16 @@ static void initCallbackObject(JNIEnv *env, jobject callback) {
     }
 }
 
+static void initNdkLoader(JNIEnv *env) {
+    int versionCode = babyte::getSDKVersion();
+    if (versionCode >= babyte::ANDROID_N) {
+        ndk_init(env);
+    }
+}
+
 void just_2_java() {
-    google_breakpad::MinidumpDescriptor descriptor(google_breakpad::MinidumpDescriptor::kMinidumpJustJava);
+    google_breakpad::MinidumpDescriptor descriptor(
+            google_breakpad::MinidumpDescriptor::kMinidumpJustJava);
     static google_breakpad::ExceptionHandler eh(descriptor, nullptr, NULL, NULL,
                                                 true, -1);
     eh.set_whole_callback(DumpCallback);
@@ -158,6 +169,7 @@ JNIEXPORT void JNICALL
 Java_com_babyte_breakpad_BaByteBreakpad_initBreakpadNative(JNIEnv *env, jobject thiz, jstring path_,
                                                            jobject callback) {
     initCallbackObject(env, callback);
+    initNdkLoader(env);
     if (path_ != nullptr) {
         dump_and_2_java(env, path_);
     } else {

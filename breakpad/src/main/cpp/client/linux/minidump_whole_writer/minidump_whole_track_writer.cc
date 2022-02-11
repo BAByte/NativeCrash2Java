@@ -45,10 +45,11 @@
 #include "client/linux/minidump_whole_writer/minidump_whole_track_writer.h"
 #include <dlfcn.h>
 #include <sys/prctl.h>
-#include <third_party/utils/libunwind_utils.h>
-#include <third_party/utils/crash_info_.h>
+#include <third_party/utils/libunwind/libunwind_utils.h>
+#include <third_party/utils/crash_info_utils.h>
 #include <third_party/utils/android_version_utils.h>
 #include <third_party/utils/signal_explain.h>
+#include <third_party/utils/libbacktrace/libbacktrace_utils.h>
 
 #define LOG_TAG ">>> minidumpWholeTrackWrier"
 
@@ -163,12 +164,6 @@ namespace {
         }
 
         void DumpCrashInfoInLib() {
-#if defined(__ANDROID__)
-            const char kOSId[] = "A";
-#else
-            const char kOSId[] = "L";
-#endif
-
 // Dump the runtime architecture. On multiarch devices it might not match the
 // hw architecture (the one returned by uname()), for instance in the case of
 // a 32-bit app running on a aarch64 device.
@@ -197,17 +192,19 @@ namespace {
                 //相对偏移地址
                 const uintptr_t addr_relative =
                         (pc - (uintptr_t) info.dli_fbase);
-                stringSplicing_.append("CrashSo: ");
+                stringSplicing_.append("Crash pc:");
+                stringSplicing_.append(" ");
+                stringSplicing_.append((uintptr_t) addr_relative);
+                stringSplicing_.append("\n");
+                stringSplicing_.append("Crash so:");
+                stringSplicing_.append(" ");
                 stringSplicing_.append(info.dli_fname);
                 stringSplicing_.append("(");
                 stringSplicing_.append(kArch);
                 stringSplicing_.append(")");
-                stringSplicing_.append(" ");
-                stringSplicing_.append("+");
-                stringSplicing_.append((uintptr_t) addr_relative);
                 stringSplicing_.append("\n");
 
-                stringSplicing_.append("CrashMethod: ");
+                stringSplicing_.append("Crash method: ");
                 stringSplicing_.append((char *) info.dli_sname);
             } else {
                 stringSplicing_.append("Microdump skipped (uninteresting)");
@@ -237,13 +234,10 @@ namespace {
             stringSplicing_.append("]");
             stringSplicing_.append(" (NOTE: linux thread name length limit is 15 characters)");
             stringSplicing_.append("\n");
-
             int versionCode = babyte::getSDKVersion();
             if (versionCode >= babyte::ANDROID_L && versionCode < babyte::ANDROID_N) {
                 DumpNativeThreadTrashBeforeN();
-                return;
-            }
-            if (versionCode >= babyte::ANDROID_N) {
+            } else if (versionCode >= babyte::ANDROID_N) {
                 DumpNativeThreadTrashAfterN();
             }
         }
@@ -258,7 +252,9 @@ namespace {
         }
 
         void DumpNativeThreadTrashAfterN() {
-
+            babyte::LibBackTraceUtils libBackTraceUtils = babyte::LibBackTraceUtils();
+            libBackTraceUtils.dumpTrace(dumper_->crash_thread(), (void *) ucontext_,
+                                        &stringSplicing_);
         }
     };
 }

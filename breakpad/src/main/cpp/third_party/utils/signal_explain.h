@@ -7,7 +7,6 @@
 
 
 namespace babyte {
-
     extern char *GetSIGBUS(int crash_signal_code) {
         switch (static_cast<unsigned int>(crash_signal_code)) {
             case MD_EXCEPTION_FLAG_LIN_BUS_ADRALN:

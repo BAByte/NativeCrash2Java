@@ -39,8 +39,7 @@ typedef struct {
 } unw_cursor_t;
 
 #if defined(__arm__)
-typedef struct
-{
+typedef struct {
     uintptr_t r[16];
 } unw_context_t;
 #else
@@ -62,14 +61,14 @@ void *libunwind = nullptr;
 size_t kLineBufferSize = 8 * 1024;
 
 bool babyte::LibunwindUtils::initLibunwind() {
-    if (nullptr == (libunwind = dlopen("libunwind.so", RTLD_NOW))) {
+    if (nullptr == (libunwind = dlopen(libunwindName, RTLD_NOW))) {
         ALOGE("dlopen libunwind = null");
         release();
         return false;
     }
 
-    if (nullptr == (unw_init_local = (t_unw_init_local) dlsym(libunwind,
-                                                              "_U" UNW_TARGET"_init_local"))) {
+    if (nullptr ==
+        (unw_init_local = (t_unw_init_local) dlsym(libunwind, "_U" UNW_TARGET"_init_local"))) {
         ALOGE("dlsym unw_init_local = null");
         release();
         return false;
@@ -126,68 +125,14 @@ void babyte::LibunwindUtils::dumpTrack(ucontext_t *uc, int limit, babyte::CrashI
     }
     int i = 0;
     do {
-        format(trackInfo, i);
+        uintptr_t pc;
+        if (unw_get_reg(cursor, UNW_REG_IP, &pc) < 0) {
+            trackInfo->append("unKnow frame");
+            continue;
+        }
+        trackInfo->format(pc,trackInfo, i);
         i++;
     } while (unw_step(cursor) > 0 && i < limit);
-}
-
-/**
- * fomat like
- * #05 pc 01a3862c  /data/app/com.babyte.banativecrash-1/oat/x86/base.odex (offset 0xd68000) (void kotlinx.coroutines.DispatchedTask.run()+2560)
- * @param trackInfo
- * @param line
- */
-void babyte::LibunwindUtils::format(babyte::CrashInfo *trackInfo, int line) {
-    uintptr_t pc;
-    unw_get_reg(cursor, UNW_REG_IP, &pc);
-    Dl_info info;
-    char num[16];
-    sprintf(num,"%02d",line);
-    trackInfo->append("     #");
-    trackInfo->append(num);
-    if (dladdr((void *) pc, &info) != 0 && info.dli_fname != NULL) {
-        if (NULL != pc) {
-            trackInfo->append(" ");
-            trackInfo->append("pc");
-            trackInfo->append(" ");
-            trackInfo->append(pc);
-        }
-
-        if (NULL != info.dli_fname) {
-            trackInfo->append(" ");
-            trackInfo->append(info.dli_fname);
-        }
-
-        if (NULL != info.dli_fbase) {
-            trackInfo->append(" ");
-            trackInfo->append("(");
-            trackInfo->append("offset");
-            trackInfo->append(" ");
-
-            //相对偏移地址
-            const uintptr_t addr_relative =
-                    (pc - (uintptr_t) info.dli_fbase);
-            trackInfo->append((uintptr_t) addr_relative);
-            trackInfo->append(")");
-        }
-
-        if (NULL != info.dli_sname) {
-            trackInfo->append(" ");
-            trackInfo->append("(");
-            trackInfo->append(info.dli_sname);
-        }
-
-        if (NULL != info.dli_saddr) {
-            trackInfo->append(" + ");
-            const uintptr_t offset =
-                    (pc - (uintptr_t) info.dli_saddr);
-            trackInfo->append(offset);
-            trackInfo->append(")");
-        }
-    }else {
-        trackInfo->append("unKnow frame");
-    }
-    trackInfo->append("\n");
 }
 
 void babyte::LibunwindUtils::release() {
