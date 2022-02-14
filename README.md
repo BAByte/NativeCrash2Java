@@ -45,7 +45,7 @@
 
 # 功能介绍
 
-+ 保留breakpad导出minidump文件功能
++ 保留breakpad导出minidump文件功能 （可选择是否启用）
 + 发生异常时将native异常信息，java层的调用栈通过回调提供给开发者，将这些信息输出到控制台的效果如下：
 
 ~~~bash
@@ -112,13 +112,17 @@ dependencies {
 ~~~
 
 # 示例代码
-
-很简单，就一行：
-
+两种模式可选：
 ~~~kotlin
-//初始化
+//发生native异常时:回调异常信息并导出minidump到指定目录，
 BaByteBreakpad.initBreakpad(this.cacheDir.absolutePath) { info:CrashInfo ->
-    //格式化输出到控制台(可选)
+    //格式化输出到控制台
+    BaByteBreakpad.formatPrint(TAG, info)
+}
+
+//发生native异常时:回调异常信息并
+BaByteBreakpad.initBreakpad { info:CrashInfo ->
+    //格式化输出到控制台
     BaByteBreakpad.formatPrint(TAG, info)
 }
 ~~~
