@@ -11,7 +11,7 @@ task androidSourcesJar(type: Jar) {
 
 ext {
     PUBLISH_GROUP_ID = 'io.github.BAByte'
-    PUBLISH_VERSION = '1.0.1'
+    PUBLISH_VERSION = '1.0.2'
 }
 
 ext["signing.keyId"] = ''
@@ -49,12 +49,12 @@ publishing {
                 name = PUBLISH_ARTIFACT_ID
                 description = 'native crash tool'
                 // If your project has a dedicated site, use its URL here
-                url = 'https://github.com/BAByte/BANativeCrash'
+                url = 'https://github.com/BAByte/NativeCrash2Java'
                 licenses {
                     license {
                         //协议类型，一般默认Apache License2.0的话不用改：
-                        name = 'The Apache License, Version 2.0'
-                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                        name = 'MIT License'
+                        url = 'https://github.com/BAByte/NativeCrash2Java/blob/main/LICENSE'
                     }
                 }
                 developers {
@@ -67,10 +67,10 @@ publishing {
                 // Version control info, if you're using GitHub, follow the format as seen here
                 scm {
                     //修改成你的Git地址：
-                    connection = 'https://github.com/BAByte/BANativeCrash.git'
-                    developerConnection = 'https://github.com/BAByte/BANativeCrash.git'
+                    connection = 'https://github.com/BAByte/NativeCrash2Java.git'
+                    developerConnection = 'https://github.com/BAByte/NativeCrash2Java.git'
                     //分支地址：
-                    url = 'https://github.com/BAByte/BANativeCrash.git/tree/master'
+                    url = 'https://github.com/BAByte/NativeCrash2Java.git/tree/master'
                 }
                 // A slightly hacky fix so that your POM will include any transitive dependencies
                 // that your library builds upon

@@ -1,3 +1,3 @@
 include ':app'
 include ':breakpad'
-rootProject.name = "BANativeCrash"
+rootProject.name = "NativeCrash2Java"
