@@ -107,7 +107,8 @@ allprojects {
 
 ~~~groovy
 dependencies {   
-	implementation 'io.github.BAByte:native-crash:releaseVersionCode' //添加这一行
+    //添加这一行,releaseVersionCode填最新的版本
+	implementation 'io.github.BAByte:native-crash:releaseVersionCode' 
 }
 ~~~
 
