@@ -5,6 +5,7 @@ import android.util.Log
 import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import com.babyte.breakpad.BaByteBreakpad
+import com.babyte.breakpad.data.CrashInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -24,7 +25,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         //初始化
-        BaByteBreakpad.initBreakpad(this.cacheDir.absolutePath) { info ->
+        BaByteBreakpad.initBreakpad(this.cacheDir.absolutePath) { info:CrashInfo ->
             //格式化输出到控制台
             BaByteBreakpad.formatPrint(TAG, info)
         }

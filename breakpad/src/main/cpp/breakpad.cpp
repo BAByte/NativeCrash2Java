@@ -190,6 +190,7 @@ extern "C"
 JNIEXPORT void JNICALL
 Java_com_babyte_breakpad_BaByteBreakpad_initBreakpadNative(JNIEnv *env, jobject thiz, jstring path_,
                                                            jobject callback) {
+    initCallbackThreadHanlder();
     initCallbackObject(env, callback);
     initNdkLoader(env);
     if (path_ != nullptr) {
@@ -200,7 +201,6 @@ Java_com_babyte_breakpad_BaByteBreakpad_initBreakpadNative(JNIEnv *env, jobject 
 }
 
 JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
-    initCallbackThreadHanlder();
     JNIEnv *env;
     g_jvm = vm;
     if (vm->GetEnv((void **) &env, JNI_VERSION_1_6) != JNI_OK) {

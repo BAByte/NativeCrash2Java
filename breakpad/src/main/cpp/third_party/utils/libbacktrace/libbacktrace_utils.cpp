@@ -25,6 +25,7 @@ babyte::LibBackTraceUtils::dumpTrace(pid_t tid, void *context, babyte::CrashInfo
 
     for (size_t i = 0, size = backtrace->NumFrames(); i < size; ++i) {
         auto str = backtrace->FormatFrameData(i);
+        if (str.empty()) continue;
         trackInfo->append(str.c_str());
         trackInfo->append("\n");
     }

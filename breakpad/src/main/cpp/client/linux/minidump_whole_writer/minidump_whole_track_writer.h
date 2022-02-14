@@ -30,7 +30,7 @@ namespace babyte {
                             int log_descriptors[2]);
 
     static const char *HEAD_THREAD = "^";
-    const int MAX_LOG_NUM_ = 8 * 1024;
+    const int MAX_LOG_NUM_ = 10 * 1024;
     const int MAX_FRAME_ = 64;
     const int ANDROID_L = 21;
     const int ANDROID_N = 24;
