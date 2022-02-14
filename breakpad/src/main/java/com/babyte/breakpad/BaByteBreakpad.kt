@@ -1,5 +1,6 @@
 package com.babyte.breakpad
 
+import android.util.Log
 import androidx.annotation.Keep
 import com.babyte.breakpad.callback.NativeCrashCallback
 import com.babyte.breakpad.data.CrashInfo
@@ -10,6 +11,8 @@ import com.babyte.breakpad.data.CrashInfo
  */
 @Keep
 object BaByteBreakpad {
+    private const val LOG_MAX_LENGTH = 20
+
     init {
         System.loadLibrary("breakpad")
     }
@@ -24,11 +27,17 @@ object BaByteBreakpad {
      */
     fun initBreakpad(dir: String, nativeCrashWholeCallBack: (CrashInfo) -> Unit) {
         initBreakpadNative(dir, object : NativeCrashCallback {
-            override fun onCrash(miniDumpPath: String, info: String, crashThreadName: String) {
+            override fun onCrash(
+                miniDumpPath: String,
+                crashInfo: String,
+                nativeThreadTrack: String,
+                crashThreadName: String
+            ) {
                 nativeCrashWholeCallBack.invoke(
                     CrashInfo(
                         miniDumpPath,
-                        info,
+                        crashInfo,
+                        nativeThreadTrack,
                         getStack(crashThreadName)
                     )
                 )
@@ -38,16 +47,50 @@ object BaByteBreakpad {
 
     fun initBreakpad(nativeCrashInfoCallBack: (CrashInfo) -> Unit) {
         initBreakpadNative(null, object : NativeCrashCallback {
-            override fun onCrash(miniDumpPath: String, info: String, crashThreadName: String) {
+            override fun onCrash(
+                miniDumpPath: String,
+                crashInfo: String,
+                nativeThreadTrack: String,
+                crashThreadName: String
+            ) {
                 nativeCrashInfoCallBack.invoke(
                     CrashInfo(
                         null,
-                        info,
+                        crashInfo,
+                        nativeThreadTrack,
                         getStack(crashThreadName)
                     )
                 )
             }
         })
+    }
+
+    fun formatPrint(
+        tag: String,
+        info:CrashInfo
+    ) {
+        formatPrint(tag, info.path ?: "dump minidump file failed")
+        formatPrint(tag, info.nativeInfo)
+        formatPrint(tag, info.nativeThreadTrack)
+        formatPrint(tag, info.jvmThreadTrack)
+    }
+
+    private fun formatPrint(TAG: String, msg: String) {
+        val sb = java.lang.StringBuilder()
+        var i = 1
+        msg.reader().readLines().forEach {
+            i++
+            sb.appendLine(it)
+            if (i >= LOG_MAX_LENGTH) {
+                i = 1
+                Log.e(TAG, " \n$sb")
+                sb.clear()
+            }
+        }
+        if (sb.isNotEmpty()) {
+            Log.e(TAG, " \n$sb")
+            sb.clear()
+        }
     }
 
     private fun getStack(crashThreadName: String): String {

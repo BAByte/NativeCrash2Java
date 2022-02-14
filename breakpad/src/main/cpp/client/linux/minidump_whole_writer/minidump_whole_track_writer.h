@@ -29,10 +29,13 @@ namespace babyte {
     bool WriteWholeMinidump(pid_t crashing_process, const void *blob, size_t blob_size,
                             int log_descriptors[2]);
 
-    const int MAX_LOG_NUM_ = 4 * 1024;
+    static const char *HEAD_THREAD = "^";
+    const int MAX_LOG_NUM_ = 8 * 1024;
     const int MAX_FRAME_ = 64;
     const int ANDROID_L = 21;
     const int ANDROID_N = 24;
+    const int PIPELINE_WRITE = 1;
+    const int PIPELINE_READ = 0;
 }  // namespace babyte
 
 #endif //MINIDUMP_WHOLE_TRACK_WRITER_H

@@ -107,7 +107,8 @@ namespace google_breakpad {
         typedef bool (*MinidumpWholeCallback)(const MinidumpDescriptor &descriptor,
                                               void *context,
                                               bool succeeded,
-                                              char *log);
+                                              char *crashReason,
+                                              char *threadTrack);
 
         // In certain cases, a user may wish to handle the generation of the minidump
         // themselves. In this case, they can install a handler callback which is

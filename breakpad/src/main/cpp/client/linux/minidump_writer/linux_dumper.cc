@@ -689,7 +689,7 @@ bool LinuxDumper::HasAndroidPackedRelocations(uintptr_t load_bias,
                                               uintptr_t dyn_vaddr,
                                               size_t dyn_count) {
   uintptr_t dyn_addr = load_bias + dyn_vaddr;
-  //预防dyn_count无限大的问题，在oppo A33上出现过，太大就不做这步了
+  //todo 预防dyn_count无限大的问题，在oppo A33上出现过，太大就不做这步了
   if (dyn_count > 4 * 1024) {
       return false;
   }

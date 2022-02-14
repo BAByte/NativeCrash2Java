@@ -106,7 +106,6 @@ namespace {
         }
 
         void Dump() {
-            stringSplicing_.append("------------------- NATIVE: CRASH INFO IN LIBRARY:\n");
             DumpProductInformation();
             DumpOSInformation();
             stringSplicing_.append("\n");
@@ -118,12 +117,13 @@ namespace {
             DumpCrashInfoInLib();
             stringSplicing_.append("\n");
             stringSplicing_.append("\n");
-            stringSplicing_.append("------------------- CRASH THREAD TRACK:\n");
+            stringSplicing_.append(babyte::HEAD_THREAD);
             DumpNativeThreadTrash();
-            close(log_descriptors_[0]);
-            write(log_descriptors_[1],
+            close(log_descriptors_[babyte::PIPELINE_READ]);
+            write(log_descriptors_[babyte::PIPELINE_WRITE],
                   stringSplicing_.log_line_,
                   strlen(stringSplicing_.log_line_));
+            close(log_descriptors_[1]);
             stringSplicing_.clear();
         }
 

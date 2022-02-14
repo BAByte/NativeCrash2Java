@@ -97,6 +97,7 @@
 #include "client/linux/minidump_writer/linux_dumper.h"
 #include "common/linux/eintr_wrapper.h"
 #include "third_party/lss/linux_syscall_support.h"
+#include "third_party/utils/char_split_utils.h"
 
 #if defined(__ANDROID__)
 
@@ -112,8 +113,6 @@ namespace google_breakpad {
 
     namespace {
         int log_descriptors[2];
-        int PIPELINE_WRITE = 1;
-        int PIPELINE_READ = 0;
         char *log[babyte::MAX_LOG_NUM_];
 
 // The list of signals which we consider to be crashes. The default action for
@@ -501,6 +500,27 @@ namespace google_breakpad {
         return HandleSignal(sig, &siginfo, &context);
     }
 
+    bool dump2Java(ExceptionHandler::MinidumpWholeCallback callback,
+                   const google_breakpad::MinidumpDescriptor &descriptor, void *context,
+                   bool succeeded) {
+        if (callback != nullptr) {
+            read(log_descriptors[babyte::PIPELINE_READ],
+                 log,
+                 babyte::MAX_LOG_NUM_);
+            std::vector<char *> res = babyte::SplitChar(reinterpret_cast<char *>(log),
+                                                        const_cast<char *>(babyte::HEAD_THREAD));
+            auto error = "get native crash info error";
+            if (res.size() == 2) {
+                return succeeded && callback(descriptor, context, succeeded,
+                                             res[0], res[1]);
+            } else {
+                return succeeded && callback(descriptor, context, succeeded,
+                                             const_cast<char *>(error), const_cast<char *>(error));
+            }
+        }
+        return succeeded;
+    }
+
 // This function may run in a compromised context: see the top of the file.
     bool ExceptionHandler::GenerateDump(CrashContext *context) {
         if (IsOutOfProcess())
@@ -551,7 +571,7 @@ namespace google_breakpad {
             return false;
         }
 
-        close(log_descriptors[PIPELINE_WRITE]);
+        close(log_descriptors[babyte::PIPELINE_WRITE]);
         // Close the read end of the pipe.
         sys_close(fdes[0]);
         // Allow the child to ptrace us
@@ -570,17 +590,13 @@ namespace google_breakpad {
         }
 
         bool success = r != -1 && WIFEXITED(status) && WEXITSTATUS(status) == 0;
-        if (whole_callback_ != nullptr) {
-            read(log_descriptors[PIPELINE_READ],
-                 log,
-                 babyte::MAX_LOG_NUM_);
-            success = whole_callback_(minidump_descriptor_, callback_context_, success,
-                                      reinterpret_cast<char *>(log));
-        }
+        success = success &&
+                  dump2Java(whole_callback_, minidump_descriptor_, callback_context_,
+                            success);
         if (callback_) {
             success = success && callback_(minidump_descriptor_, callback_context_, success);
         }
-        close(log_descriptors[PIPELINE_READ]);
+        close(log_descriptors[babyte::PIPELINE_READ]);
         return success;
     }
 
@@ -625,6 +641,7 @@ namespace google_breakpad {
         bool result = true;
 
         if (minidump_descriptor_.IsMicrodumpOnConsole()) {
+            logger::write("IsMicrodumpOnConsole", sizeof("IsMicrodumpOnConsole"));
             result = google_breakpad::WriteMicrodump(
                     crashing_process,
                     context,
@@ -645,7 +662,7 @@ namespace google_breakpad {
                                                     may_skip_dump,
                                                     principal_mapping_address,
                                                     sanitize_stacks);
-        } else if(minidump_descriptor_.IsFile()) {
+        } else if (minidump_descriptor_.IsFile()) {
             result = google_breakpad::WriteMinidump(minidump_descriptor_.path(),
                                                     minidump_descriptor_.size_limit(),
                                                     crashing_process,
@@ -683,7 +700,7 @@ namespace google_breakpad {
 #endif
 
     bool ExceptionHandler::WriteMinidump() {
-        if (minidump_descriptor_.IsFile()){
+        if (minidump_descriptor_.IsFile()) {
             // Update the path of the minidump so that this can be called multiple times
             // and new files are created for each minidump.  This is done before the
             // generation happens, as clients may want to access the MinidumpDescriptor
@@ -744,7 +761,7 @@ namespace google_breakpad {
             reinterpret_cast<void*>(context.context.uc_mcontext.gregs[REG_RIP]);
 #elif defined(__arm__)
         context.siginfo.si_addr =
-            reinterpret_cast<void*>(context.context.uc_mcontext.arm_pc);
+                reinterpret_cast<void *>(context.context.uc_mcontext.arm_pc);
 #elif defined(__aarch64__)
         context.siginfo.si_addr =
             reinterpret_cast<void*>(context.context.uc_mcontext.pc);

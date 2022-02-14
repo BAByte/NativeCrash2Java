@@ -45,3 +45,4 @@ lint.xml
 
 output.json
 /.idea/
+/secring.gpg

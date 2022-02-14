@@ -1,17 +1,18 @@
 package com.babyte.banativecrash
 
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
+import androidx.appcompat.app.AppCompatActivity
 import com.babyte.breakpad.BaByteBreakpad
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import java.lang.StringBuilder
 
 class MainActivity : AppCompatActivity() {
     companion object {
-        private const val TAG = "MainActivity"
+        private const val TAG = "crash"
     }
 
     init {
@@ -24,9 +25,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         //初始化
         BaByteBreakpad.initBreakpad(this.cacheDir.absolutePath) { info ->
-            Log.e(TAG, info.path ?: "")
-            Log.e(TAG, info.info)
-            Log.e(TAG, " \n${info.jvmThreadTrack}")
+            //格式化输出到控制台
+            BaByteBreakpad.formatPrint(TAG, info)
         }
 
         val jniButton = findViewById<Button>(R.id.jniCrash)

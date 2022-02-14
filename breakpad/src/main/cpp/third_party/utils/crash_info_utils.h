@@ -13,7 +13,7 @@
 namespace babyte {
     class CrashInfo {
     public:
-        size_t kLineBufferSize = 8 * 1024;
+        size_t kLineBufferSize = 4 * 1024;
         char *log_line_;
         google_breakpad::LinuxDumper *dumper_;
 

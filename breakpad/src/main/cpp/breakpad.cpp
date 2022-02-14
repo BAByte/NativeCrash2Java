@@ -30,9 +30,10 @@ jmethodID g_crash_callback_method;
 
 class CrashInfo {
 public:
-    char *native_log;
+    char *crash_info;
     char *path;
     char *crash_thread_name;
+    char *crash_thread_track;
 };
 
 volatile CrashInfo *g_crash_info = nullptr;
@@ -40,52 +41,73 @@ volatile CrashInfo *g_crash_info = nullptr;
 bool DumpCallback(const google_breakpad::MinidumpDescriptor &descriptor,
                   void *context,
                   bool succeeded,
-                  char *log) {
+                  char *crashReason,
+                  char *threadTrack) {
     char cThreadName[32] = {0};
     prctl(PR_GET_NAME, (unsigned long) cThreadName);
 
     g_crash_info = new CrashInfo();
-    g_crash_info->native_log = log;
+    g_crash_info->crash_info = crashReason;
     g_crash_info->path = const_cast<char *>(descriptor.path());
     g_crash_info->crash_thread_name = cThreadName;
+    g_crash_info->crash_thread_track = threadTrack;
 
     sem_post(&g_cat_java_crash_semaphore);
     sem_wait(&g_done_semaphore);
     return succeeded;
 }
 
+jstring getUtf8(JNIEnv *env, char *str) {
+    jbyteArray array = env->NewByteArray(strlen(str));
+    env->SetByteArrayRegion(array, 0, strlen(str),
+                            reinterpret_cast<const jbyte *>(str));
+    jstring strEncode = env->NewStringUTF("UTF-8");
+    jclass cls = env->FindClass("java/lang/String");
+    jmethodID ctor = env->GetMethodID(cls, "<init>", "([BLjava/lang/String;)V");
+    return (jstring) env->NewObject(cls, ctor, array, strEncode);
+}
+
 void notify2Java(JNIEnv *env) {
     jstring path_js = nullptr;
     auto error_path = "not dump path";
     jstring error_path_js = env->NewStringUTF(error_path);
+
     jstring info_js = nullptr;
-    auto error = "get crash error";
-    jstring error_js = env->NewStringUTF(error);
+    auto info_error = "get crash info error";
+    jstring info_error_js = env->NewStringUTF(info_error);
 
-    if (g_crash_info != nullptr) {
-        char final_info[strlen(g_crash_info->native_log)];
-        strcat(final_info, g_crash_info->native_log);
+    jstring crash_thread_track_js = nullptr;
+    auto crash_thread_error = "get crash thread track error";
+    jstring crash_thread_error_js = env->NewStringUTF(crash_thread_error);
 
-        jbyteArray array = env->NewByteArray(strlen(final_info));
-        env->SetByteArrayRegion(array, 0, strlen(final_info),
-                                reinterpret_cast<const jbyte *>(final_info));
-        jstring strEncode = env->NewStringUTF("UTF-8");
-        jclass cls = env->FindClass("java/lang/String");
-        jmethodID ctor = env->GetMethodID(cls, "<init>", "([BLjava/lang/String;)V");
-        info_js = (jstring) env->NewObject(cls, ctor, array, strEncode);
+    jstring crashThreadName_js = env->NewStringUTF(g_crash_info->crash_thread_name);
+
+    if (g_crash_info == nullptr) {
+        return;
+    }
+    if (g_crash_info->path != nullptr) {
         path_js = env->NewStringUTF(g_crash_info->path);
+    }
+    if (g_crash_info->crash_info != nullptr) {
+        info_js = getUtf8(env, g_crash_info->crash_info);
+    }
+    if (g_crash_info->crash_thread_track != nullptr) {
+        crash_thread_track_js = getUtf8(env, g_crash_info->crash_thread_track);
     }
 
     if (g_crash_callback_method != nullptr) {
-        if (info_js == nullptr) {
-            info_js = error_js;
-        }
         if (path_js == nullptr) {
             path_js = error_path_js;
         }
-        jstring crashThreadName_js = env->NewStringUTF(g_crash_info->crash_thread_name);
+        if (info_js == nullptr) {
+            info_js = info_error_js;
+        }
+        if (crash_thread_track_js == nullptr) {
+            crash_thread_track_js = crash_thread_error_js;
+        }
+
         env->CallVoidMethod(g_crash_callback_obj, g_crash_callback_method,
-                            path_js, info_js, crashThreadName_js);
+                            path_js, info_js, crash_thread_track_js, crashThreadName_js);
     } else {
         ALOGE("threadHandler g_crash_callback_method == null");
     }
@@ -134,7 +156,7 @@ static void initCallbackObject(JNIEnv *env, jobject callback) {
         return;
     }
     g_crash_callback_method = env->GetMethodID(cls, "onCrash",
-                                               "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
+                                               "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
     if (g_crash_callback_method == NULL) {
         ALOGE("CallBackThreadHandler get jmethodId error");
     }

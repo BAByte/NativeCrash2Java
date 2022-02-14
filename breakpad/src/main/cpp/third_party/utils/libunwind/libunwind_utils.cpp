@@ -58,7 +58,6 @@ static t_unw_init_local unw_init_local = nullptr;
 static t_unw_get_reg unw_get_reg = nullptr;
 static t_unw_step unw_step = nullptr;
 void *libunwind = nullptr;
-size_t kLineBufferSize = 8 * 1024;
 
 bool babyte::LibunwindUtils::initLibunwind() {
     if (nullptr == (libunwind = dlopen(libunwindName, RTLD_NOW))) {
