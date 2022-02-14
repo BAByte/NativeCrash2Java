@@ -121,7 +121,7 @@ BaByteBreakpad.initBreakpad(this.cacheDir.absolutePath) { info:CrashInfo ->
     BaByteBreakpad.formatPrint(TAG, info)
 }
 
-//发生native异常时:回调异常信息并
+//发生native异常时:回调异常信息
 BaByteBreakpad.initBreakpad { info:CrashInfo ->
     //格式化输出到控制台
     BaByteBreakpad.formatPrint(TAG, info)
