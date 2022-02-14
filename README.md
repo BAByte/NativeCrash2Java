@@ -7,9 +7,10 @@
    * [示例项目](#示例项目)
 
 # BANativeCrash
+
 [![image](https://img.shields.io/badge/Release-1.0.1-gree.svg)](https://github.com/BAByte/BANativeCrash/releases)	[![image](https://img.shields.io/badge/SupportAndroidVersion-5--11-gree.svg)](https://developer.android.com/studio/releases/platforms?hl=zh-cn)	![image](https://img.shields.io/badge/supportABI-arm64--v8a|armeabi--v7a|x86|x86--64-gree.svg)
 
-基于[google/breakpad](https://github.com/google/breakpad)的Android Native 异常捕获库。在native层发生异常时Android开发者能得到相关异常信息。
+基于[google/breakpad](https://github.com/google/breakpad)的Android Native 异常捕获库，在native层发生异常时java层能得到相关异常信息。
 
 # 现状
 
@@ -17,15 +18,15 @@
 
 + Breakpad的minidump文件不仅小，记录的堆栈信息还很详细，且全平台支持，但需要拉取minidump文件并经过比较繁琐的步骤才可以得出有用的信息：
 
-假设我们通过Breakpad监控native异常，步骤如下：
+  + 假设我们通过Breakpad监控native异常，步骤如下：
 
-1. 启动时检测Breakpad是否有导出过minidump文件，有则说明发生过native异常。
-2. 到客户现场，或者远程拉取minidump文件。
-3. 编译出自己电脑的操作系统的minidump_stackwalk工具。
-4. 使用minidump_stackwalk工具翻译minidump文件文件内容，例如拿到崩溃时的程序计数器寄存器内的值（下文称为pc值）。
-5. 找到对应崩溃so库ABI的add2line工具，并根据上一步拿到的pc值定位出发生异常的代码行数。
+    1. 启动时检测Breakpad是否有导出过minidump文件，有则说明发生过native异常。
+    2. 到客户现场，或者远程拉取minidump文件。
+    3. 编译出自己电脑的操作系统的minidump_stackwalk工具。
+    4. 使用minidump_stackwalk工具翻译minidump文件内容，例如拿到崩溃时的程序计数器寄存器内的值（下文称为pc值）。
+    5. 找到对应崩溃so库ABI的add2line工具，并根据上一步拿到的pc值定位出发生异常的代码行数。
 
-整个步骤十分复杂和繁琐，且没有java层的crash线程栈信息，不利于java开发者分析自己到底在哪里调用了native的代码
+    整个步骤十分复杂和繁琐，且没有java层的crash线程栈信息，不利于java开发者快速得出调用了native的代码。
 
 # 设计意图
 
@@ -113,7 +114,9 @@ dependencies {
 ~~~
 
 # 示例代码
+
 两种模式可选：
+
 ~~~kotlin
 //发生native异常时:回调异常信息并导出minidump到指定目录，
 BaByteBreakpad.initBreakpad(this.cacheDir.absolutePath) { info:CrashInfo ->
@@ -132,3 +135,4 @@ BaByteBreakpad.initBreakpad { info:CrashInfo ->
 
 点击查看：[示例项目](https://github.com/BAByte/BANativeCrash/tree/main/app)
 
+   * https://github.com/BAByte/BANativeCrash/tree/main/app)
