@@ -22,7 +22,7 @@
   4. 使用minidump_stackwalk工具翻译minidump文件内容，例如拿到崩溃时的程序计数器寄存器内的值（下文称为pc值）。
   5. 找到对应崩溃so库ABI的add2line工具，并根据上一步拿到的pc值定位出发生异常的代码行数。
 
-整个步骤十分复杂和繁琐，且没有java层的crash线程栈信息，不利于java开发者快速得出调用了native的代码。
+整个步骤十分复杂和繁琐，且没有java层的crash线程栈信息，不利于java开发者快速定位调用native的代码。
 
 # 设计意图
 
