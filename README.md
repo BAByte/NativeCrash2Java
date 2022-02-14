@@ -130,5 +130,3 @@ BaByteBreakpad.initBreakpad { info:CrashInfo ->
 # 示例项目
 
 点击查看：[示例项目](https://github.com/BAByte/BANativeCrash/tree/main/app)
-
-   * https://github.com/BAByte/BANativeCrash/tree/main/app)
