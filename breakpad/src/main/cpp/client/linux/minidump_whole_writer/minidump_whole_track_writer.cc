@@ -253,7 +253,6 @@ namespace {
 
         void DumpNativeThreadTrashAfterO() {
             babyte::LibBackTraceUtils libBackTraceUtils = babyte::LibBackTraceUtils();
-            logger::write(">>>>ddd11",sizeof(">>>>ddd11"));
             libBackTraceUtils.dumpTrace(dumper_->crash_thread(), (void *) ucontext_,
                                         &stringSplicing_);
         }
