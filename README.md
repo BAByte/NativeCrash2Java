@@ -114,7 +114,7 @@ dependencies {
 }
 ~~~
 
-# 示例代码
+# 初始化
 
 两种模式可选：
 
@@ -134,4 +134,4 @@ BaByteBreakpad.initBreakpad { info:CrashInfo ->
 
 # 示例项目
 
-点击查看：[示例项目](
+点击查看：[示例项目](https://github.com/BAByte/NativeCrash2Java/tree/main/app)
