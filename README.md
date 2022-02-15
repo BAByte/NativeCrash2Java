@@ -10,7 +10,7 @@
 
 # BANativeCrash
 
-[![image](https://img.shields.io/badge/Release-1.0.2-gree.svg)](https://github.com/BAByte/BANativeCrash/releases)	[![image](https://img.shields.io/badge/SupportAndroidVersion-5--11-gree.svg)](https://developer.android.com/studio/releases/platforms?hl=zh-cn)	![image](https://img.shields.io/badge/supportABI-arm64--v8a|armeabi--v7a|x86|x86--64-gree.svg)
+[![image](https://img.shields.io/badge/Release-1.0.3-gree.svg)](https://github.com/BAByte/BANativeCrash/releases)	[![image](https://img.shields.io/badge/SupportAndroidVersion-5--12-gree.svg)](https://developer.android.com/studio/releases/platforms?hl=zh-cn)	![image](https://img.shields.io/badge/supportABI-arm64--v8a|armeabi--v7a|x86|x86--64-gree.svg)
 
 基于[google/breakpad](https://github.com/google/breakpad)的Android Native 异常捕获库，在native层发生异常时java层能得到相关异常信息。
 
