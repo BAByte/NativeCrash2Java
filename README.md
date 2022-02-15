@@ -14,13 +14,16 @@
 
 # 现状
 
++ 在发生native异常时，java层无法感知到。
 + 业务部门可以快速实现java层的异常监控系统（java层全局异常捕获的实现很简单），又或者业务部门已经实现了java层的异常监控系统。
-+ Breakpad的minidump文件不仅小，记录的堆栈信息还很详细，且全平台支持，但需要拉取minidump文件并经过比较繁琐的步骤才可以得出有用的信息：
-  1. 启动时检测Breakpad是否有导出过minidump文件，有则说明发生过native异常。
-  2. 到客户现场，或者远程拉取minidump文件。
-  3. 编译出自己电脑的操作系统的minidump_stackwalk工具。
-  4. 使用minidump_stackwalk工具翻译minidump文件内容，例如拿到崩溃时的程序计数器寄存器内的值（下文称为pc值）。
-  5. 找到对应崩溃so库ABI的add2line工具，并根据上一步拿到的pc值定位出发生异常的代码行数。
++ 安卓还可以接入Breakpad，其导出的minidump文件不仅体积小信息还全，但有两个问题：
+  + 1.和现状第1点的问题相同。
+  + 2.：需要拉取minidump文件并经过比较繁琐的步骤才可以得出有用的信息：
+    + 启动时检测Breakpad是否有导出过minidump文件，有则说明发生过native异常。
+    + 到客户现场，或者远程拉取minidump文件。
+    + 编译出自己电脑的操作系统的minidump_stackwalk工具。
+    + 使用minidump_stackwalk工具翻译minidump文件内容，例如拿到崩溃时的程序计数器寄存器内的值（下文称为pc值）。
+    + 找到对应崩溃so库ABI的add2line工具，并根据上一步拿到的pc值定位出发生异常的代码行数。
 
 整个步骤十分复杂和繁琐，且没有java层的crash线程栈信息，不利于java开发者快速定位调用native的代码。
 
