@@ -6,6 +6,7 @@
    * [接入方式](#接入方式)
    * [初始化](#初始化)
    * [示例项目](#示例项目)
+   * [致谢](#致谢)
 
 # BANativeCrash
 
@@ -154,3 +155,9 @@ BaByteBreakpad.initBreakpad { info:CrashInfo ->
 # 示例项目
 
 点击查看：[示例项目](https://github.com/BAByte/NativeCrash2Java/tree/main/app)
+
+# 致谢
+
++ 感谢google breakpad
++ 感谢腾讯bugly提供在发生异常时，native回调java层的思路
++ 感谢爱奇艺xCrash提供的dlopen思路
