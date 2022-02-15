@@ -8,6 +8,9 @@
 #include <android/log.h>
 #include <cstdlib>
 #include <cstring>
+#include <third_party/utils/android_version_utils.h>
+#include <client/linux/minidump_whole_writer/minidump_whole_track_writer.h>
+#include <third_party/utils/ndk_dlopen/dlopen.h>
 
 #define LOG_TAG ">>> Libunwind"
 #define ALOGV(...) __android_log_print(ANDROID_LOG_VERBOSE, LOG_TAG, __VA_ARGS__)
@@ -59,27 +62,55 @@ static t_unw_get_reg unw_get_reg = nullptr;
 static t_unw_step unw_step = nullptr;
 void *libunwind = nullptr;
 
+void *m_dlsym(void *__handle, const char *__symbol) {
+    int versionCode = babyte::getSDKVersion();
+    if (versionCode >= babyte::ANDROID_N) {
+        return ndk_dlsym(__handle, __symbol);
+    } else {
+        return dlsym(__handle, __symbol);
+    }
+}
+
+void *m_dlopen(const char *__filename, int __flag) {
+    int versionCode = babyte::getSDKVersion();
+    if (versionCode >= babyte::ANDROID_N) {
+        return ndk_dlopen(__filename, __flag);
+    } else {
+        return dlopen(__filename, __flag);
+    }
+}
+
+int m_dlclose(void* __handle) {
+    int versionCode = babyte::getSDKVersion();
+    if (versionCode >= babyte::ANDROID_N) {
+        return ndk_dlclose(__handle);
+    } else {
+        return dlclose(__handle);
+    }
+}
+
 bool babyte::LibunwindUtils::initLibunwind() {
-    if (nullptr == (libunwind = dlopen(libunwindName, RTLD_NOW))) {
+    libunwind = m_dlopen(libunwindName, RTLD_NOW);
+    if (nullptr == libunwind) {
         ALOGE("dlopen libunwind = null");
         release();
         return false;
     }
 
     if (nullptr ==
-        (unw_init_local = (t_unw_init_local) dlsym(libunwind, "_U" UNW_TARGET"_init_local"))) {
+        (unw_init_local = (t_unw_init_local) m_dlsym(libunwind, "_U" UNW_TARGET"_init_local"))) {
         ALOGE("dlsym unw_init_local = null");
         release();
         return false;
     }
 
-    if (nullptr == (unw_get_reg = (t_unw_get_reg) dlsym(libunwind, "_U" UNW_TARGET"_get_reg"))) {
+    if (nullptr == (unw_get_reg = (t_unw_get_reg) m_dlsym(libunwind, "_U" UNW_TARGET"_get_reg"))) {
         ALOGE("dlsym unw_get_reg = null");
         release();
         return false;
     }
 
-    if (nullptr == (unw_step = (t_unw_step) dlsym(libunwind, "_U" UNW_TARGET"_step"))) {
+    if (nullptr == (unw_step = (t_unw_step) m_dlsym(libunwind, "_U" UNW_TARGET"_step"))) {
         ALOGE("dlsym unw_step = null");
         release();
         return false;
@@ -129,7 +160,7 @@ void babyte::LibunwindUtils::dumpTrack(ucontext_t *uc, int limit, babyte::CrashI
             trackInfo->append("unKnow frame");
             continue;
         }
-        trackInfo->format(pc,trackInfo, i);
+        trackInfo->format(pc, trackInfo, i);
         i++;
     } while (unw_step(cursor) > 0 && i < limit);
 }
@@ -143,7 +174,7 @@ void babyte::LibunwindUtils::release() {
         unw_init_local = nullptr;
         unw_get_reg = nullptr;
         unw_step = nullptr;
-        dlclose(libunwind);
+        m_dlclose(libunwind);
         libunwind = nullptr;
     }
 }

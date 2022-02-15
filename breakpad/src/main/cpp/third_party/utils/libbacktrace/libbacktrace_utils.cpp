@@ -16,6 +16,9 @@
 #define ALOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
 #define ALOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
+void *libbacktrace= nullptr;
+typedef BacktraceStub* (*backtrace_create_t)(pid_t pid, pid_t tid,void *);
+static backtrace_create_t backtrace_create_ = nullptr;
 void
 babyte::LibBackTraceUtils::dumpTrace(pid_t tid, void *context, babyte::CrashInfo *trackInfo) {
     std::unique_ptr<BacktraceStub> backtrace{getBacktrace(tid)};
@@ -30,22 +33,22 @@ babyte::LibBackTraceUtils::dumpTrace(pid_t tid, void *context, babyte::CrashInfo
         trackInfo->append("\n");
     }
 }
-
 BacktraceStub *babyte::LibBackTraceUtils::getBacktrace(pid_t tid) {
-    auto deleter = [](void *handle) { ndk_dlclose(handle); };
-    std::unique_ptr<void, decltype(deleter)> handle{ndk_dlopen(libBacktraceName, RTLD_NOW),
-                                                    deleter};
+    void* handle = ndk_dlopen(libBacktraceName, RTLD_NOW);
     if (!handle) {
         return nullptr;
     }
-    using BacktraceCreate = BacktraceStub *(*)(pid_t pid, pid_t tid, void *map);
-    union {
-        void *p;
-        BacktraceCreate fn;
-    } backtrace_create;
-    backtrace_create.p = ndk_dlsym(handle.get(), createBacktraceName);
-    if (!backtrace_create.p) {
+
+    backtrace_create_= (backtrace_create_t)ndk_dlsym(handle, createBacktraceName);
+    if (!backtrace_create_) {
         return nullptr;
     }
-    return backtrace_create.fn(BACKTRACE_CURRENT_PROCESS, tid, nullptr);
+    return backtrace_create_(BACKTRACE_CURRENT_PROCESS, tid, nullptr);
+}
+
+void babyte::LibBackTraceUtils::release() {
+    if (libbacktrace != nullptr) {
+        dlclose(libbacktrace);
+        libbacktrace = nullptr;
+    }
 }

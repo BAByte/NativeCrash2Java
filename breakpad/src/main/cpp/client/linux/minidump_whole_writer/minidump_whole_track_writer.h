@@ -34,6 +34,7 @@ namespace babyte {
     const int MAX_FRAME_ = 64;
     const int ANDROID_L = 21;
     const int ANDROID_N = 24;
+    const int ANDROID_O = 26;
     const int PIPELINE_WRITE = 1;
     const int PIPELINE_READ = 0;
 }  // namespace babyte

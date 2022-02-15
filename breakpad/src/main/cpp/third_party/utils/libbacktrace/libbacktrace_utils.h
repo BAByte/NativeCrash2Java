@@ -16,6 +16,7 @@ namespace babyte {
         const char *createBacktraceName = "_ZN9Backtrace6CreateEiiP12BacktraceMap";
         void dumpTrace(pid_t tid, void* context, babyte::CrashInfo *trackInfo);
         BacktraceStub* getBacktrace(pid_t tid);
+        void release();
     };
 }
 

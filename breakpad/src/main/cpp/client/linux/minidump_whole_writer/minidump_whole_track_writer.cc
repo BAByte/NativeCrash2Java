@@ -235,14 +235,14 @@ namespace {
             stringSplicing_.append(" (NOTE: linux thread name length limit is 15 characters)");
             stringSplicing_.append("\n");
             int versionCode = babyte::getSDKVersion();
-            if (versionCode >= babyte::ANDROID_L && versionCode < babyte::ANDROID_N) {
-                DumpNativeThreadTrashBeforeN();
-            } else if (versionCode >= babyte::ANDROID_N) {
-                DumpNativeThreadTrashAfterN();
+            if (versionCode >= babyte::ANDROID_L && versionCode < babyte::ANDROID_O) {
+                DumpNativeThreadTrashBeforeO();
+            } else if (versionCode >= babyte::ANDROID_O) {
+                DumpNativeThreadTrashAfterO();
             }
         }
 
-        void DumpNativeThreadTrashBeforeN() {
+        void DumpNativeThreadTrashBeforeO() {
             babyte::LibunwindUtils libunwindUtils = babyte::LibunwindUtils();
             if (libunwindUtils.initLibunwind()) {
                 libunwindUtils.dumpTrack(const_cast<ucontext_t *>(ucontext_),
@@ -251,8 +251,9 @@ namespace {
             }
         }
 
-        void DumpNativeThreadTrashAfterN() {
+        void DumpNativeThreadTrashAfterO() {
             babyte::LibBackTraceUtils libBackTraceUtils = babyte::LibBackTraceUtils();
+            logger::write(">>>>ddd11",sizeof(">>>>ddd11"));
             libBackTraceUtils.dumpTrace(dumper_->crash_thread(), (void *) ucontext_,
                                         &stringSplicing_);
         }
@@ -274,7 +275,6 @@ namespace babyte {
             dumper.SetCrashInfoFromSigInfo(context->siginfo);
             dumper.set_crash_thread(context->tid);
         }
-
         MinidumpWholeWriter writer(context, &dumper,
                                    log_descriptors);
         if (!writer.Init())
