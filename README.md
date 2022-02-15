@@ -102,7 +102,7 @@
 例：从上文的异常信息中可以看到abi是aarch64，对应的so库abi是arm64，所以add2line的使用如下：
 
 ~~~shell
-$ ./ ~/ndk/android-ndk-r16b/toolchains/aarch64-linux-android-4.9/prebuilt/darwin-x86_64/bin /aarch64-linux-android-addr2line -Cfe /Users/ba/AndroidStudioProjects/NativeCrash2Java/app/build/intermediates/cmake/debug/obj/arm64-v8a/libnative-lib.so 0000000000000650
+$ ./ndk/android-ndk-r16b/toolchains/aarch64-linux-android-4.9/prebuilt/darwin-x86_64/bin /aarch64-linux-android-addr2line -Cfe /Users/ba/AndroidStudioProjects/NativeCrash2Java/app/build/intermediates/cmake/debug/obj/arm64-v8a/libnative-lib.so 0000000000000650
 ~~~
 
 输出结果如下：
