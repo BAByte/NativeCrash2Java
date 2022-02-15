@@ -1,6 +1,7 @@
    * [BANativeCrash](#banativecrash)
    * [现状](#现状)
    * [设计意图](#设计意图)
+   * [整体流程](#整体流程)
    * [功能介绍](#功能介绍)
      * [定位到so中具体代码行示例](#定位到so中具体代码行示例)
    * [接入方式](#接入方式)
@@ -33,19 +34,20 @@
 
 1. 让java层有知悉native异常的通道：
    + java开发者可以在java代码中得到native异常的情况，进而对native异常做出反应，而不是再次启动后去检测Breakpad是否有导出过minidump文件。
-
 2. 增加信息的可用性，进而提升问题分析的效率：
    + 回调中提供naive异常信息、naive和java调用栈信息和minidump文件文件路径，这些信息可以直接通过业务部门的异常监控系统上报。
 
    + 划分为两个阶段解决问题，我预想是大部分都在阶段一解决了问题，而不需要再对minidump文件进行分析，总体来讲是提升了分析效率的：
      + 阶段一：有了java的调用栈和native的调用栈信息，大部分异常原因都可以快速定位并分析出来。
      + 阶段二：回调中也会提供minidump文件的存储路径，业务部门可以按需拉取。（这一步需要业务部门本身有拉取日志的功能，且需要按上文”现状部分进行操作”，较费时费力）
-
 3. 最少改动：
    + 让接入方不因为引入新功能而大量改动现有代码。例如：在native崩溃回调处,使用现有的java层异常监控系统上报native异常信息。
-
 4. 单一职责：
    + 只做native的crash捕获，不做系统内存情况、cpu使用率、系统日志等信息的采集功能。
+
+# 整体流程
+
+![image](https://github.com/BAByte/NativeCrash2Java/blob/main/pic/flow.png?raw=true)
 
 # 功能介绍
 
@@ -158,6 +160,6 @@ BaByteBreakpad.initBreakpad { info:CrashInfo ->
 
 # 致谢
 
-+ 感谢google breakpad
-+ 感谢腾讯bugly提供在发生异常时，native回调java层的思路
-+ 感谢爱奇艺xCrash提供的dlopen思路
++ 感谢google breakpad库提供的源码
++ 感谢腾讯bugly团队提供在发生异常时，native回调java层的思路
++ 感谢爱奇艺xCrash库源码中的dlopen思路
