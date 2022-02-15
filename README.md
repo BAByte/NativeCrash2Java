@@ -14,8 +14,8 @@
 
 # 现状
 
-+ 在发生native异常时，java层无法感知到。
-+ 业务部门可以快速实现java层的异常监控系统（java层全局异常捕获的实现很简单），又或者业务部门已经实现了java层的异常监控系统。
++ 发生native异常时，安卓系统会将native异常信息输出到logcat中，但是java层无法感知到native异常的发生，进而无法获取这些异常信息并上报到业务的异常监控系统。
++ 业务部门可以快速实现java层的异常监控系统（java层全局异常捕获的实现很简单），又或者业务部门已经实现了java层的异常监控系统，但没有覆盖到native层的异常捕获。
 + 安卓还可以接入Breakpad，其导出的minidump文件不仅体积小信息还全，但有两个问题：
   + 1.和现状第1点的问题相同。
   + 2.：需要拉取minidump文件并经过比较繁琐的步骤才可以得出有用的信息：
@@ -48,7 +48,8 @@
 # 功能介绍
 
 + 保留breakpad导出minidump文件功能 （可选择是否启用）
-+ 发生异常时将native异常信息，java层的调用栈通过回调提供给开发者，将这些信息输出到控制台的效果如下：
++ 发生native异常时将异常信息、native层调用栈、java层的调用栈通过回调提供给开发者，将这些信息输出到控制台的效果如下：
+
 
 ~~~bash
 2022-02-14 11:33:08.598 30228-30253/com.babyte.banativecrash E/crash:  
@@ -93,6 +94,23 @@
 ...
 ~~~
 
+## 定位到so代码行示例
+
+可以使用ndk中的add2line工具根据pc值和带符号信息的so库，定位出具体代码行数。
+
+例：从上文的异常信息中可以看到abi是aarch64，对应的so库abi是arm64，所以add2line的使用如下：
+
+~~~shell
+$ ./ ~/ndk/android-ndk-r16b/toolchains/aarch64-linux-android-4.9/prebuilt/darwin-x86_64/bin /aarch64-linux-android-addr2line -Cfe /Users/ba/AndroidStudioProjects/NativeCrash2Java/app/build/intermediates/cmake/debug/obj/arm64-v8a/libnative-lib.so 0000000000000650
+~~~
+
+输出结果如下：
+
+~~~shell
+Crash()
+/Users/ba/AndroidStudioProjects/NativeCrash2Java/app/.cxx/cmake/debug/arm64-v8a/../../../../src/main/cpp/native-lib.cpp:6
+~~~
+
 # 接入方式
 
 根项目的build.gradle中:
@@ -134,4 +152,4 @@ BaByteBreakpad.initBreakpad { info:CrashInfo ->
 
 # 示例项目
 
-点击查看：[示例项目](https://github.com/BAByte/NativeCrash2Java/tree/main/app)
+点击查看：[示例项目](
