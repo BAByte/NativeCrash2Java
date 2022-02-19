@@ -115,8 +115,6 @@ namespace {
             DumpCrashReason();
             stringSplicing_.append("\n");
             DumpCrashInfoInLib();
-            stringSplicing_.append("\n");
-            stringSplicing_.append("\n");
             stringSplicing_.append(babyte::HEAD_THREAD);
             DumpNativeThreadTrash();
             close(log_descriptors_[babyte::PIPELINE_READ]);
