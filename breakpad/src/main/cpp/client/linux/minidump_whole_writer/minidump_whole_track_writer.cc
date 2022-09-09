@@ -106,6 +106,7 @@ namespace {
         }
 
         void Dump() {
+            ALOGD("WriteWholeMinidump Dump");
             DumpProductInformation();
             DumpOSInformation();
             stringSplicing_.append("\n");
@@ -123,6 +124,7 @@ namespace {
                   strlen(stringSplicing_.log_line_));
             close(log_descriptors_[1]);
             stringSplicing_.clear();
+            ALOGD("WriteWholeMinidump Dump end");
         }
 
     private:
@@ -263,6 +265,7 @@ namespace babyte {
     bool WriteWholeMinidump(pid_t crashing_process,
                             const void *blob,
                             size_t blob_size, int log_descriptors[2]) {
+        ALOGD("WriteWholeMinidump");
         LinuxPtraceDumper dumper(crashing_process);
         const ExceptionHandler::CrashContext *context = NULL;
         if (blob) {
