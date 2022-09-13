@@ -7,6 +7,7 @@
 
 
 namespace babyte {
+    char temp[64];
     extern char *GetSIGBUS(int crash_signal_code) {
         switch (static_cast<unsigned int>(crash_signal_code)) {
             case MD_EXCEPTION_FLAG_LIN_BUS_ADRALN:
@@ -14,7 +15,9 @@ namespace babyte {
             case MD_EXCEPTION_FLAG_LIN_BUS_ADRERR:
                 return "wrong physical address";
             default :
-                return reinterpret_cast<char *>(crash_signal_code);
+                string str;
+                sprintf(temp, "%d", crash_signal_code);
+                return temp;
         }
     }
 
@@ -37,7 +40,9 @@ namespace babyte {
             case MD_EXCEPTION_FLAG_LIN_FPE_FLTSUB:
                 return "The table below is out of bounds";
             default :
-                return reinterpret_cast<char *>(crash_signal_code);
+                string str;
+                sprintf(temp, "%d", crash_signal_code);
+                return temp;
         }
     }
 
@@ -48,7 +53,9 @@ namespace babyte {
             case MD_EXCEPTION_FLAG_LIN_SEGV_ACCERR:
                 return "address without access";
             default :
-                return reinterpret_cast<char *>(crash_signal_code);
+                string str;
+                sprintf(temp, "%d", crash_signal_code);
+                return temp;
         }
     }
 
@@ -71,7 +78,9 @@ namespace babyte {
             case MD_EXCEPTION_FLAG_LIN_ILL_BADSTK:
                 return "Internal stack error";
             default :
-                return reinterpret_cast<char *>(crash_signal_code);
+                string str;
+                sprintf(temp, "%d", crash_signal_code);
+                return temp;
         }
     }
 
@@ -86,7 +95,9 @@ namespace babyte {
             case SIGILL:
                 return GetSIGILL(crash_signal_code);
             default:
-                return reinterpret_cast<char *>(crash_signal_code);
+                string str;
+                sprintf(temp, "%d", crash_signal_code);
+                return temp;
         }
     }
 }

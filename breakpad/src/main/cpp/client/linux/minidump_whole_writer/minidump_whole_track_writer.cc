@@ -106,25 +106,27 @@ namespace {
         }
 
         void Dump() {
-            ALOGD("WriteWholeMinidump Dump");
             DumpProductInformation();
             DumpOSInformation();
             stringSplicing_.append("\n");
             DumpCpuInfo();
+
             stringSplicing_.append("\n");
             stringSplicing_.append("\n");
             DumpCrashReason();
+
             stringSplicing_.append("\n");
             DumpCrashInfoInLib();
+
             stringSplicing_.append(babyte::HEAD_THREAD);
             DumpNativeThreadTrash();
+
             close(log_descriptors_[babyte::PIPELINE_READ]);
             write(log_descriptors_[babyte::PIPELINE_WRITE],
                   stringSplicing_.log_line_,
                   strlen(stringSplicing_.log_line_));
             close(log_descriptors_[1]);
             stringSplicing_.clear();
-            ALOGD("WriteWholeMinidump Dump end");
         }
 
     private:
@@ -216,11 +218,14 @@ namespace {
             stringSplicing_.append(dumper_->crash_signal());
             stringSplicing_.append("(");
             stringSplicing_.append(dumper_->GetCrashSignalString());
+
             stringSplicing_.append(")");
             stringSplicing_.append(" ");
+
             stringSplicing_.append(babyte::GetCrashSignalCodeString(
                     dumper_->crash_signal(),
                     dumper_->crash_signal_code()));
+
             stringSplicing_.append("\n");
             stringSplicing_.append("Crash address: ");
             stringSplicing_.append(dumper_->crash_address());
@@ -265,7 +270,6 @@ namespace babyte {
     bool WriteWholeMinidump(pid_t crashing_process,
                             const void *blob,
                             size_t blob_size, int log_descriptors[2]) {
-        ALOGD("WriteWholeMinidump");
         LinuxPtraceDumper dumper(crashing_process);
         const ExceptionHandler::CrashContext *context = NULL;
         if (blob) {
