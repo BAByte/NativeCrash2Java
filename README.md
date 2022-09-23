@@ -10,6 +10,7 @@
    * [致谢](#致谢)
 
 # BANativeCrash
+图片要是无法显示，请使用梯子！！！
 
 [![image](https://img.shields.io/badge/Release-1.0.6-brightgreen)](https://github.com/BAByte/BANativeCrash/releases)	[![image](https://img.shields.io/badge/SupportAndroidVersion-5--12-gree.svg)](https://developer.android.com/studio/releases/platforms?hl=zh-cn)	![image](https://img.shields.io/badge/supportABI-arm64--v8a|armeabi--v7a|x86|x86--64-gree.svg)
 
@@ -46,7 +47,8 @@
    + 只做native的crash捕获，不做系统内存情况、cpu使用率、系统日志等信息的采集功能。
 
 # 整体流程
-** 图片要是无法显示，请使用梯子！！！**
+ 图片要是无法显示，请使用梯子！！！
+
 ![image](https://github.com/BAByte/NativeCrash2Java/blob/main/pic/flow.png?raw=true)
 
 # 功能介绍
