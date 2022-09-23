@@ -46,7 +46,7 @@
    + 只做native的crash捕获，不做系统内存情况、cpu使用率、系统日志等信息的采集功能。
 
 # 整体流程
-
+** 图片要是无法显示，请使用梯子！！！**
 ![image](https://github.com/BAByte/NativeCrash2Java/blob/main/pic/flow.png?raw=true)
 
 # 功能介绍
@@ -61,7 +61,7 @@
 2022-02-14 11:33:08.599 30228-30253/com.babyte.banativecrash E/crash:  
     Operating system: Android 28 Linux 4.4.146 #37 SMP PREEMPT Wed Jan 20 18:26:59 CST 2021
     CPU: aarch64 (8 core)
-    
+
     Crash reason: signal 11(SIGSEGV) Invalid address
     Crash address: 0000000000000000
     Crash pc: 0000000000000650
@@ -74,7 +74,7 @@
     #02 pc 0000000000565de0  /system/lib64/libart.so (offset 0xc1000) (art_quick_generic_jni_trampoline+144)
     #03 pc 000000000055cd88  /system/lib64/libart.so (offset 0xc1000) (art_quick_invoke_stub+584)
     #04 pc 00000000000cf740  /system/lib64/libart.so (art::ArtMethod::Invoke(art::Thread*, unsigned int*, unsigned int, art::JValue*, char const*)+200)
-    #05 pc 00000000002823b8  /system/lib64/libart.so (offset 0xc1000) 
+    #05 pc 00000000002823b8  /system/lib64/libart.so (offset 0xc1000)
 ...
 2022-02-14 11:33:08.603 30228-30253/com.babyte.banativecrash E/crash:  
     Thread[DefaultDispatcher-worker-1,5,main]
@@ -132,7 +132,7 @@ allprojects {
 ~~~groovy
 dependencies {   
     //添加这一行,releaseVersionCode填最新的版本
-	implementation 'io.github.BAByte:native-crash:releaseVersionCode@aar' 
+	implementation 'io.github.BAByte:native-crash:releaseVersionCode@aar'
 }
 ~~~
 
